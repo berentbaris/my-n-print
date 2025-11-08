@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/static/css/main.bd65ef00.css",
+    "main.js": "/static/js/main.85407b38.js",
+    "static/media/nprint_lite_new_logo.png": "/static/media/nprint_lite_new_logo.1e6bb88fd0fdd6777b55.png",
+    "index.html": "/index.html",
+    "main.bd65ef00.css.map": "/static/css/main.bd65ef00.css.map",
+    "main.85407b38.js.map": "/static/js/main.85407b38.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.bd65ef00.css",
+    "static/js/main.85407b38.js"
+  ]
+}
