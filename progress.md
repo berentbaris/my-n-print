@@ -1,6 +1,12 @@
 # My-N-Print — Progress Log
 
 
+## 2026-03-23 (session 5 — calorie bar, font & text polish)
+
+- **Calorie bar:** Changed max from 2,500 to 3,000 kcal. Added visual tick markers with labels at the 2,000 and 2,500 positions. Colour gradient thresholds unchanged (green → amber at 2,000, amber → red at 2,500).
+- **Intro font:** Removed inline `fontFamily: "Space Grotesk"` from the intro `<h2>` and content `<div>` so the section inherits the same system font stack as the rest of the page.
+- **Intro description text:** Updated wording to "…personalized nitrogen footprint…" and added sentence about improving footprint through informed consumption reduction.
+
 ## 2026-03-23 (session 4 — Firestore logging)
 
 - **Task 4 (persistent storage):** Added Firestore integration to log every completed calculation. Each write saves country, food footprint, energy footprint, total footprint, daily calories, app version, and a server-generated timestamp to the `calculations` collection.

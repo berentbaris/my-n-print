@@ -641,12 +641,10 @@ const NFoodprintCalculator = () => {
 
       {/* Intro — what is a nitrogen footprint? */}
       <div className={`rounded-2xl p-6 md:p-8 ${darkMode ? 'bg-gray-800/60 border border-gray-700' : 'bg-white/80 border border-emerald-100'}`}>
-        <h2 className={`text-2xl md:text-3xl font-bold mb-4 ${darkMode ? 'text-emerald-300' : 'text-emerald-800'}`}
-            style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif' }}>
+        <h2 className={`text-2xl md:text-3xl font-bold mb-4 ${darkMode ? 'text-emerald-300' : 'text-emerald-800'}`}>
           What is a nitrogen footprint?
         </h2>
-        <div className={`space-y-3 text-lg leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
-             style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif' }}>
+        <div className={`space-y-3 text-lg leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
           <p>
             Nitrogen is essential for life — it's in every protein you eat and every crop that grows.
             But when we produce food, burn fuel, or treat wastewater, some of that nitrogen escapes
@@ -676,7 +674,8 @@ const NFoodprintCalculator = () => {
           </div>
           <p className={`text-base mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             Fill in your country, weekly food servings, and energy habits below and this calculator
-            will estimate your personal nitrogen footprint and compare it to your country's average.
+            will estimate your personalized nitrogen footprint and compare it to your country's average.
+            Based on your results, you can improve your footprint by reducing your consumption in an informed way.
           </p>
         </div>
       </div>
@@ -866,18 +865,30 @@ const NFoodprintCalculator = () => {
           <p className="text-3xl font-bold">
             {Math.round(liveCalories)} <span className="text-lg font-normal">kcal/day</span>
           </p>
-          <div className={`mt-2 w-full rounded-full h-2.5 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-            <div
-              className="h-2.5 rounded-full transition-all duration-300"
-              style={{
-                width: `${Math.min(100, (liveCalories / 2500) * 100)}%`,
-                background: liveCalories > 2500
-                  ? 'linear-gradient(90deg, #f59e0b, #ef4444)'
-                  : liveCalories > 2000
-                    ? 'linear-gradient(90deg, #10b981, #f59e0b)'
-                    : 'linear-gradient(90deg, #10b981, #34d399)',
-              }}
-            />
+          <div className="relative" style={{ marginTop: '0.5rem' }}>
+            <div className={`w-full rounded-full h-2.5 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+              <div
+                className="h-2.5 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(100, (liveCalories / 3000) * 100)}%`,
+                  background: liveCalories > 2500
+                    ? 'linear-gradient(90deg, #f59e0b, #ef4444)'
+                    : liveCalories > 2000
+                      ? 'linear-gradient(90deg, #10b981, #f59e0b)'
+                      : 'linear-gradient(90deg, #10b981, #34d399)',
+                }}
+              />
+            </div>
+            {/* 2,000 kcal marker */}
+            <div style={{ position: 'absolute', left: `${(2000 / 3000) * 100}%`, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', transform: 'translateX(-50%)' }}>
+              <div style={{ width: 2, height: 10, background: darkMode ? '#9ca3af' : '#6b7280', borderRadius: 1 }} />
+              <span style={{ fontSize: 11, color: darkMode ? '#9ca3af' : '#6b7280', marginTop: 2, whiteSpace: 'nowrap' }}>2,000</span>
+            </div>
+            {/* 2,500 kcal marker */}
+            <div style={{ position: 'absolute', left: `${(2500 / 3000) * 100}%`, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', transform: 'translateX(-50%)' }}>
+              <div style={{ width: 2, height: 10, background: darkMode ? '#9ca3af' : '#6b7280', borderRadius: 1 }} />
+              <span style={{ fontSize: 11, color: darkMode ? '#9ca3af' : '#6b7280', marginTop: 2, whiteSpace: 'nowrap' }}>2,500</span>
+            </div>
           </div>
           <p className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Recommended: <strong>2,000 kcal/day</strong> (women) · <strong>2,500 kcal/day</strong> (men)

@@ -32,6 +32,10 @@ The app is a **React + Vite** single-page application. It pulls reference data (
 | 3 | **Add a favicon** — the browser tab currently has no icon, which looks unfinished. Create or add a small icon (based on the existing logo or a leaf/N motif) so the tab looks professional | ✅ completed |
 | 4 | **Save calculated footprints to a persistent store** — log every completed calculation (country, energy footprint, food footprint, total, timestamp) to a permanent backend. Investigate whether Firebase (Firestore or Realtime Database) can serve as this "Excel DB" since the app is already hosted on Firebase. Google Sheets append-via-API is another option. | ✅ completed |
 
+| 5 | **Calorie bar improvements** — extend bar max to 3,000 kcal and add visual tick marks at 2,000 and 2,500 | ✅ completed |
+| 6 | **Intro text font fix** — remove Space Grotesk override from the intro section so it matches the rest of the page | ✅ completed |
+| 7 | **Update intro description** — reword the subtitle to mention personalized footprint and informed consumption reduction | ✅ completed |
+
 ### Next task
 
 All v4.3 tasks complete.
@@ -40,12 +44,7 @@ All v4.3 tasks complete.
 
 ## Current status
 
-All four v4.3 tasks complete. Task 4 (Firestore logging) implemented: Firebase compat SDK loaded from Google CDN via `<script>` tags in `public/index.html`; `src/firebase.js` lazily initialises the app and exports `logCalculation()`; every "Calculate Footprint" click now fires-and-forgets a write to the `calculations` collection (country, food footprint, energy footprint, total, daily calories, app version, server timestamp). Security rules (`firestore.rules`) restrict the collection to create-only. `firebase.json` updated to reference the rules file.
-
-**Before deploying**, the organiser must:
-1. Enable Firestore in the Firebase console (https://console.firebase.google.com/project/my-nprint/firestore → "Create database", production mode).
-2. Deploy security rules: `firebase deploy --only firestore:rules`.
-3. Verify the existing Google API key works for Firestore writes (if not, copy the Web API Key from Project Settings → General into `.env` as `REACT_APP_FIREBASE_API_KEY`).
+Tasks 1–7 done. Session 5 applied three quick-fix polish items: calorie progress bar now scales to 3,000 kcal with tick marks at 2,000 and 2,500; intro section font changed to match the rest of the site (removed Space Grotesk inline override); intro description text updated with new wording about personalized footprint and informed consumption reduction.
 
 ## Blockers / decisions needed
 
@@ -53,4 +52,4 @@ All four v4.3 tasks complete. Task 4 (Firestore logging) implemented: Firebase c
 
 ---
 
-Last updated: 2026-03-23 (session 4)
+Last updated: 2026-03-23 (session 5)
