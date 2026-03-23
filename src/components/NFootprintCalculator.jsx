@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import logo from '../nprint_lite_new_logo.png';
 //require('dotenv').config();
 
 /* ===== CONFIG ===== */
-const VERSION = '4.2.1';
+const VERSION = '4.3.0';
 const REACT_APP_GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
 const SPREADSHEET_IDS = { MAIN: '1duGMqR2pnJtMIUwQzKaEaFGrDqGaeJCEJLAhLvKvXIo' };
 const SHEETS = {
@@ -298,6 +298,39 @@ const NFoodprintCalculator = () => {
 
   if (!window._NPRINT_buildLookups) window._NPRINT_buildLookups = buildLookups;
 
+  // Memoize attrByCat for live calorie computation
+  const attrByCatMemo = useMemo(() => {
+    const map = {};
+    (sheetData.attr || []).forEach((r) => {
+      const cat = String(r['name'] || '').trim().toLowerCase();
+      if (!cat) return;
+      let fw = parseNum(r['Food waste %']);
+      if (fw > 1) fw = fw / 100;
+      map[cat] = {
+        foodWaste: fw,
+        fossilFuel: parseNum(r['Fossil fuel (kg N/year)']),
+        nContent: parseNum(r['N content (kg N/kg food)']),
+        servingSize: parseNum(r['Serving size']),
+        kcalPerServing: parseNum(r['kcal_per_serving']),
+      };
+    });
+    return map;
+  }, [sheetData.attr]);
+
+  // Live daily calorie estimate — updates as the user changes food servings
+  const liveCalories = useMemo(() => {
+    let totalDailyKcal = 0;
+    for (const category in foodInputs) {
+      const servingsPerWeek = Number(foodInputs[category] || 0);
+      if (!servingsPerWeek) continue;
+      const servingsPerDay = servingsPerWeek / 7;
+      const kcalPerServing = attrByCatMemo[category]?.kcalPerServing || 0;
+      totalDailyKcal += servingsPerDay * kcalPerServing;
+    }
+    totalDailyKcal += 130; // baseline
+    return totalDailyKcal;
+  }, [foodInputs, attrByCatMemo]);
+
   function computeDailyCalories(foodInputs, attrByCat) {
     let totalDailyKcal = 0;
 
@@ -330,21 +363,6 @@ const NFoodprintCalculator = () => {
     try {
       const sd = sheetData;
       const { isoByCountry, incomeByIso, vnfByCatByIncome, attrByCat } = buildLookups(sd);
-      // DEBUG START ----------------------------------
-      console.log("DEBUG — attrByCat:", attrByCat);
-      console.log("DEBUG — sample keys:", Object.keys(attrByCat));
-      console.log("DEBUG — beef entry:", attrByCat["beef"]);
-      console.log("DEBUG — poultry entry:", attrByCat["poultry"]);
-      console.log("DEBUG — grains and cereals:", attrByCat["grains and cereals"]);
-      console.log("DEBUG — foodInputs:", foodInputs);
-      console.log("DEBUG — attrByCat:", attrByCat);
-      console.log("DEBUG — sample keys:", Object.keys(attrByCat));
-      console.log("DEBUG — beef entry:", attrByCat["beef"]);
-      console.log("DEBUG — poultry entry:", attrByCat["poultry"]);
-      console.log("DEBUG — grains & cereals entry:", attrByCat["grains and cereals"]);
-      console.log("DEBUG — foodInputs:", foodInputs);   // ← ADD THIS
-
-      // DEBUG END ------------------------------------
       const dailyCalories = computeDailyCalories(foodInputs, attrByCat);
 
       const countryISO = String(isoByCountry[selectedCountry] || '').trim().toUpperCase();
@@ -609,6 +627,48 @@ const NFoodprintCalculator = () => {
         </h1>
       </div>
 
+      {/* Intro — what is a nitrogen footprint? */}
+      <div className={`rounded-2xl p-6 md:p-8 ${darkMode ? 'bg-gray-800/60 border border-gray-700' : 'bg-white/80 border border-emerald-100'}`}>
+        <h2 className={`text-2xl md:text-3xl font-bold mb-4 ${darkMode ? 'text-emerald-300' : 'text-emerald-800'}`}
+            style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif' }}>
+          What is a nitrogen footprint?
+        </h2>
+        <div className={`space-y-3 text-lg leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+             style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif' }}>
+          <p>
+            Nitrogen is essential for life — it's in every protein you eat and every crop that grows.
+            But when we produce food, burn fuel, or treat wastewater, some of that nitrogen escapes
+            into the environment as <em>reactive nitrogen</em>: compounds like nitrous oxide, ammonia,
+            and nitrate that contribute to smog, water pollution, biodiversity loss, and climate change.
+          </p>
+          <p>
+            Your <strong>nitrogen footprint</strong> is the total amount of reactive nitrogen released
+            into the environment each year as a result of your consumption. It's measured in
+            <strong> kilograms of N per year</strong> (kg N/yr) and has two main components:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700/50' : 'bg-emerald-50'}`}>
+              <span className="text-2xl">🌾</span>
+              <h3 className={`font-semibold mt-1 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>Food</h3>
+              <p className={`text-base mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Growing, processing, and transporting what you eat — plus the nitrogen your body excretes through sewage.
+              </p>
+            </div>
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700/50' : 'bg-emerald-50'}`}>
+              <span className="text-2xl">⚡</span>
+              <h3 className={`font-semibold mt-1 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>Energy</h3>
+              <p className={`text-base mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Electricity, heating, driving, and flying — burning fossil fuels converts atmospheric nitrogen into nitrogen oxides.
+              </p>
+            </div>
+          </div>
+          <p className={`text-base mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            Fill in your country, weekly food servings, and energy habits below and this calculator
+            will estimate your personal nitrogen footprint and compare it to your country's average.
+          </p>
+        </div>
+      </div>
+
       {/* Results */}
       {results && (
         <div id="results-section">
@@ -786,16 +846,29 @@ const NFoodprintCalculator = () => {
           ))}
         </div>
 
-        {/* Daily Calorie Counter */}
+        {/* Daily Calorie Counter — updates live as user changes servings */}
         <div className={`p-4 rounded-lg shadow mb-6 ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-green-50 text-gray-800'}`}>
           <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>
             Estimated Daily Calorie Intake
           </h3>
           <p className="text-3xl font-bold">
-            {results?.dailyCalories ? results.dailyCalories.toFixed(0) : 0} kcal/day
+            {Math.round(liveCalories)} <span className="text-lg font-normal">kcal/day</span>
           </p>
+          <div className={`mt-2 w-full rounded-full h-2.5 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+            <div
+              className="h-2.5 rounded-full transition-all duration-300"
+              style={{
+                width: `${Math.min(100, (liveCalories / 2500) * 100)}%`,
+                background: liveCalories > 2500
+                  ? 'linear-gradient(90deg, #f59e0b, #ef4444)'
+                  : liveCalories > 2000
+                    ? 'linear-gradient(90deg, #10b981, #f59e0b)'
+                    : 'linear-gradient(90deg, #10b981, #34d399)',
+              }}
+            />
+          </div>
           <p className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Recommended intake: <strong>2000 kcal/day (women)</strong>, <strong>2500 kcal/day (men)</strong>.
+            Recommended: <strong>2,000 kcal/day</strong> (women) · <strong>2,500 kcal/day</strong> (men)
           </p>
         </div>
 

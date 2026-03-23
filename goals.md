@@ -27,19 +27,20 @@ The app is a **React + Vite** single-page application. It pulls reference data (
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | **Add intro text** — short, plain-language explanation of the nitrogen footprint concept near the top of the page, aimed at the general public (what reactive nitrogen is, why it matters, and what this calculator does) | pending |
-| 2 | **Real-time calorie counter** — the daily calorie estimate should update live as the user changes food servings, instead of only appearing after clicking "Calculate Footprint" | pending |
+| 1 | **Add intro text** — short, plain-language explanation of the nitrogen footprint concept near the top of the page, aimed at the general public (what reactive nitrogen is, why it matters, and what this calculator does) | ✅ completed |
+| 2 | **Real-time calorie counter** — the daily calorie estimate should update live as the user changes food servings, instead of only appearing after clicking "Calculate Footprint" | ✅ completed |
 | 3 | **Add a favicon** — the browser tab currently has no icon, which looks unfinished. Create or add a small icon (based on the existing logo or a leaf/N motif) so the tab looks professional | pending |
 | 4 | **Save calculated footprints to a persistent store** — log every completed calculation (country, energy footprint, food footprint, total, timestamp) to a permanent backend. Investigate whether Firebase (Firestore or Realtime Database) can serve as this "Excel DB" since the app is already hosted on Firebase. Google Sheets append-via-API is another option. | pending |
 
 ### Next task
 
-Task 1
+Task 3
 
 ---
 
 ## Current status
 
+Tasks 1 and 2 complete. Intro text section added below the hero with a clear explanation of reactive nitrogen, the two footprint components (food & energy), and a call to action. Calorie counter now updates live via `useMemo` as the user adjusts food servings, with a colour-coded progress bar. Debug console.logs cleaned up. Version bumped to 4.3.0. Build could not be verified in the VM due to `react-app-rewired` module resolution issues in the sandboxed environment — the code changes are syntactically valid (balanced braces, correct imports). Next session: Task 3 (favicon).
 
 ## Blockers / decisions needed
 
@@ -47,4 +48,4 @@ Task 1
 
 ---
 
-Last updated: 2026-03-22
+Last updated: 2026-03-23
