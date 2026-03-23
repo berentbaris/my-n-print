@@ -1,0 +1,12 @@
+{
+  "name": "My-N-Print",
+  "short_name": "N-Print",
+  "description": "Personal nitrogen footprint calculator",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#1a3a2a",
+  "background_color": "#1a3a2a",
+  "display": "standalone"
+}

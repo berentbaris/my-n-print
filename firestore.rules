@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Calculation log — append-only, no reads from the client
+    match /calculations/{docId} {
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+
+    // Default: deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

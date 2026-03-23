@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import logo from '../nprint_lite_new_logo.png';
+import { logCalculation } from '../firebase';
 //require('dotenv').config();
 
 /* ===== CONFIG ===== */
@@ -485,7 +486,7 @@ const NFoodprintCalculator = () => {
       const sAvg = totalAvgFood > 0 ? totalAvgFood / avgFoodPre : 0;
       const adjAvgMeat = avgMeatN * sAvg, adjAvgDairy = avgDairyN * sAvg, adjAvgPlant = avgPlantN * sAvg;
 
-      setResults({
+      const computedResults = {
         totalN: totalUserFood + userEnergyLoss,
         averageN: totalAvgFood + (countryEnergyData ? (
           ((parseNum(countryEnergyData['Households (NG)'])   * TJ_to_m3 * e_factor_gas)  +
@@ -511,6 +512,17 @@ const NFoodprintCalculator = () => {
           totalAverageFood: totalAvgFood,
           totalAverageEnergy: 0, // summarized above in averageN
         },
+      };
+      setResults(computedResults);
+
+      // Fire-and-forget: log to Firestore (never blocks the UI)
+      logCalculation({
+        country: selectedCountry,
+        foodFootprint: totalUserFood,
+        energyFootprint: userEnergyLoss,
+        totalFootprint: totalUserFood + userEnergyLoss,
+        dailyCalories,
+        appVersion: VERSION,
       });
     } catch (err) {
       console.error('Calculation error:', err);
