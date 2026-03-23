@@ -1,3 +1,10 @@
+This is a web application hosted at https://my-nprint.web.app/. My-N-Print is a global-scope personal nitrogen footprint calculator based on your food and energy consumption. 
+
+Data required for the calculations can be found under the Sheets folder. The live web application pulls these sheets from Google Sheets using a hidden API. 
+
+Creators:
+Published paper:
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
