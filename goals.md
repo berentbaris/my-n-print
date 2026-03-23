@@ -35,6 +35,10 @@ The app is a **React + Vite** single-page application. It pulls reference data (
 | 5 | **Calorie bar improvements** — extend bar max to 3,000 kcal and add visual tick marks at 2,000 and 2,500 | ✅ completed |
 | 6 | **Intro text font fix** — remove Space Grotesk override from the intro section so it matches the rest of the page | ✅ completed |
 | 7 | **Update intro description** — reword the subtitle to mention personalized footprint and informed consumption reduction | ✅ completed |
+| 8 | **SEO: meta tags & Open Graph** — add proper `<meta description>`, keywords, OG tags, Twitter card, and canonical URL | ✅ completed |
+| 9 | **SEO: JSON-LD structured data** — add WebApplication and FAQPage schema markup for Google rich snippets | ✅ completed |
+| 10 | **SEO: fix H1 tag** — restore the hero `<h1>` with visible text so search engines see a meaningful page heading | ✅ completed |
+| 11 | **SEO: FAQ section** — add 4-question FAQ below the calculator (what is a nitrogen footprint, what is a good one, food vs energy, how to reduce) | ✅ completed |
 
 ### Next task
 
@@ -44,7 +48,7 @@ All v4.3 tasks complete.
 
 ## Current status
 
-Tasks 1–7 done. Session 5 applied three quick-fix polish items: calorie progress bar now scales to 3,000 kcal with tick marks at 2,000 and 2,500; intro section font changed to match the rest of the site (removed Space Grotesk inline override); intro description text updated with new wording about personalized footprint and informed consumption reduction.
+Tasks 1–11 done. Session 6 added SEO improvements: meta description, keywords, Open Graph and Twitter Card tags, canonical URL, JSON-LD structured data (WebApplication + FAQPage schemas), restored the hero `<h1>` with visible title text, and added a 4-question FAQ section below the calculator. These changes help Google index and rank the site for nitrogen footprint queries and enable rich snippet display in search results.
 
 ## Blockers / decisions needed
 
@@ -52,4 +56,4 @@ Tasks 1–7 done. Session 5 applied three quick-fix polish items: calorie progre
 
 ---
 
-Last updated: 2026-03-23 (session 5)
+Last updated: 2026-03-23 (session 6)

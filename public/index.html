@@ -4,27 +4,94 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
- 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>My-N-Print Calculator</title>
+    <meta name="theme-color" content="#1a3a2a" />
+
+    <!-- SEO meta -->
+    <meta name="description" content="Calculate your personal nitrogen footprint based on food consumption and energy use. Compare your reactive-nitrogen output to your country's average and learn how to reduce it." />
+    <meta name="keywords" content="nitrogen footprint, nitrogen footprint calculator, personal nitrogen footprint, reactive nitrogen, food footprint, energy footprint, environmental calculator, N footprint" />
+
+    <!-- Open Graph (social sharing) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="My-N-Print — Personal Nitrogen Footprint Calculator" />
+    <meta property="og:description" content="Estimate your yearly reactive-nitrogen output from food and energy. See how your footprint compares to your country's average." />
+    <meta property="og:url" content="https://my-nprint.web.app/" />
+    <meta property="og:image" content="https://my-nprint.web.app/icon-512.png" />
+    <meta property="og:site_name" content="My-N-Print" />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="My-N-Print — Nitrogen Footprint Calculator" />
+    <meta name="twitter:description" content="Calculate your personal nitrogen footprint from food and energy use. Compare it to your country's average." />
+    <meta name="twitter:image" content="https://my-nprint.web.app/icon-512.png" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://my-nprint.web.app/" />
+
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/site.webmanifest" />
+
+    <title>My-N-Print — Personal Nitrogen Footprint Calculator</title>
+
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "My-N-Print",
+      "description": "A personal nitrogen footprint calculator that estimates your yearly reactive-nitrogen output based on food consumption and energy use, and compares it to your country's average.",
+      "url": "https://my-nprint.web.app/",
+      "applicationCategory": "EnvironmentApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "browserRequirements": "Requires JavaScript"
+    }
+    </script>
+
+    <!-- FAQ structured data (helps Google show rich snippets) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is a nitrogen footprint?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Your nitrogen footprint is the total amount of reactive nitrogen released into the environment each year as a result of your consumption. It is measured in kilograms of nitrogen per year (kg N/yr) and has two main components: food (growing, processing, and transporting what you eat, plus sewage) and energy (electricity, heating, driving, and flying)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is a good nitrogen footprint?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A good nitrogen footprint depends on where you live. Average footprints vary widely by country — from under 10 kg N/yr in many developing nations to over 30 kg N/yr in the United States. Use the calculator to compare your personal result against your country's average, and aim to bring yours below that benchmark."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does food compare to energy in a nitrogen footprint?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "For most people, food is the larger contributor to their nitrogen footprint, often accounting for 60–80% of the total. Meat and dairy production are especially nitrogen-intensive due to fertiliser use, animal feed, and manure. Energy (electricity, gas, transport) makes up the remainder, mainly through nitrogen oxide emissions from burning fossil fuels."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can I reduce my nitrogen footprint?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The most effective ways to reduce your nitrogen footprint are: eating less meat and dairy (especially beef), reducing food waste, using public transport or cycling instead of driving, choosing renewable energy sources, and flying less. Even small changes in diet can make a significant difference since food production is the largest contributor for most people."
+          }
+        }
+      ]
+    }
+    </script>
 
     <!-- Firebase SDK (compat) — loaded from Google CDN, no npm install needed -->
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>

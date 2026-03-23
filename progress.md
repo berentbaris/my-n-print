@@ -1,6 +1,14 @@
 # My-N-Print — Progress Log
 
 
+## 2026-03-23 (session 6 — SEO & FAQ)
+
+- **Meta tags:** Replaced the CRA placeholder `<meta description>` with a real one targeting "personal nitrogen footprint calculator". Added `<meta keywords>`, canonical URL, and `theme-color` fix.
+- **Open Graph & Twitter Card:** Added `og:title`, `og:description`, `og:image`, `og:url`, `og:site_name`, and matching Twitter Card tags so the site previews nicely when shared on social media.
+- **JSON-LD structured data:** Added two schema blocks — `WebApplication` (so Google knows it's a free online tool) and `FAQPage` (4 questions, enables rich FAQ snippets in search results).
+- **Hero H1 restored:** Uncommented the `<h1>` and set it to "My-N-Print — Personal Nitrogen Footprint Calculator" using the existing `.nprint-hero__title` gradient style.
+- **FAQ section:** Added 4 questions below the calculator: "What is a nitrogen footprint?", "What is a good nitrogen footprint?", "How does food compare to energy?", "How can I reduce my nitrogen footprint?" — styled to match both dark and light modes.
+
 ## 2026-03-23 (session 5 — calorie bar, font & text polish)
 
 - **Calorie bar:** Changed max from 2,500 to 3,000 kcal. Added visual tick markers with labels at the 2,000 and 2,500 positions. Colour gradient thresholds unchanged (green → amber at 2,000, amber → red at 2,500).

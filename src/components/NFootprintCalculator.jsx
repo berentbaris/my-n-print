@@ -634,8 +634,8 @@ const NFoodprintCalculator = () => {
           className="h-42 md:h-60 w-auto select-none pointer-events-none drop-shadow"
           draggable="false"
         />
-        <h1 className={`text-5xl md:text-6xl font-extrabold leading-tight ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-          {/* My-N-Print */}
+        <h1 className="nprint-hero__title">
+          My-N-Print — Personal Nitrogen Footprint Calculator
         </h1>
       </div>
 
@@ -971,6 +971,66 @@ const NFoodprintCalculator = () => {
           >
             {isCalculating ? 'Calculating...' : 'Calculate N-Print'}
           </button>
+        </div>
+      </div>
+
+      {/* FAQ — helps SEO and gives visitors quick answers */}
+      <div className={`rounded-2xl p-6 md:p-8 mt-8 ${darkMode ? 'bg-gray-800/60 border border-gray-700' : 'bg-white/80 border border-emerald-100'}`}>
+        <h2 className={`text-2xl md:text-3xl font-bold mb-6 ${darkMode ? 'text-emerald-300' : 'text-emerald-800'}`}>
+          Frequently Asked Questions
+        </h2>
+        <div className="space-y-6">
+          <div>
+            <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>
+              What is a nitrogen footprint?
+            </h3>
+            <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Your nitrogen footprint is the total amount of reactive nitrogen released into the
+              environment each year as a result of your consumption. It is measured in kilograms
+              of nitrogen per year (kg&nbsp;N/yr) and has two main components: <strong>food</strong> (growing,
+              processing, and transporting what you eat, plus the nitrogen your body excretes
+              through sewage) and <strong>energy</strong> (electricity, heating, driving, and flying —
+              burning fossil fuels converts atmospheric nitrogen into nitrogen oxides).
+            </p>
+          </div>
+
+          <div>
+            <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>
+              What is a good nitrogen footprint?
+            </h3>
+            <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              It depends on where you live. Average nitrogen footprints vary widely by country — from
+              under 10&nbsp;kg&nbsp;N/yr in many developing nations to over 30&nbsp;kg&nbsp;N/yr in
+              the United States. Use the calculator above to compare your personal result against your
+              country's average, and aim to bring yours below that benchmark through informed changes
+              to your diet and energy habits.
+            </p>
+          </div>
+
+          <div>
+            <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>
+              How does food compare to energy?
+            </h3>
+            <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              For most people, food is the larger contributor to their nitrogen footprint, often
+              accounting for 60–80% of the total. Meat and dairy production are especially
+              nitrogen-intensive due to fertiliser use, animal feed, and manure. Energy use —
+              electricity, gas, and transport — makes up the remainder, mainly through nitrogen
+              oxide emissions from burning fossil fuels.
+            </p>
+          </div>
+
+          <div>
+            <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>
+              How can I reduce my nitrogen footprint?
+            </h3>
+            <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              The most effective steps are: eating less meat and dairy (especially beef), reducing
+              food waste, using public transport or cycling instead of driving, choosing renewable
+              energy sources, and flying less. Even small changes in diet can make a significant
+              difference since food production is the largest contributor for most people.
+            </p>
+          </div>
         </div>
       </div>
 
