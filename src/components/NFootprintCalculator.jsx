@@ -635,7 +635,7 @@ const NFoodprintCalculator = () => {
           draggable="false"
         />
         <h1 className="nprint-hero__title">
-          My-N-Print — Personal Nitrogen Footprint Calculator
+          Personal Nitrogen Footprint Calculator
         </h1>
       </div>
 
