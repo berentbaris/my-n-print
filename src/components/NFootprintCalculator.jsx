@@ -59,6 +59,7 @@ const attrHeaders = [
   'Fossil fuel (kg N/year)',
   'N content (kg N/kg food)',
   'Serving size',
+  'kcal_per_serving'
 ];
 
 const sewageHeaders = ['Income', 'N_removal_rating'];
@@ -71,7 +72,7 @@ const energyHeaders = [
   'Commerce and public services (Elec)','Households (Elec)','Other consumers (Elec)','Rest (Elec)',
   'Flights per capita','flight time (hours)','renewables'
 ];
-const servingSizeHeaders = ['name','Serving size'];
+const servingSizeHeaders = ['name','Serving size','kcal_per_serving'];
 
 /* ===== UI ===== */
 const foodCategories = [
@@ -288,6 +289,7 @@ const NFoodprintCalculator = () => {
         fossilFuel: parseNum(r['Fossil fuel (kg N/year)']),
         nContent:   parseNum(r['N content (kg N/kg food)']),
         servingSize:parseNum(r['Serving size']),
+        kcalPerServing: parseNum(r['kcal_per_serving'])
       };
     });
 
@@ -295,6 +297,27 @@ const NFoodprintCalculator = () => {
   }
 
   if (!window._NPRINT_buildLookups) window._NPRINT_buildLookups = buildLookups;
+
+  function computeDailyCalories(foodInputs, attrByCat) {
+    let totalDailyKcal = 0;
+
+    for (const category in foodInputs) {
+      const servingsPerWeek = Number(foodInputs[category] || 0);
+      if (!servingsPerWeek) continue;
+
+      // convert to daily consumption
+      const servingsPerDay = servingsPerWeek / 7;
+
+      // kcal_per_serving from sheet
+      const kcalPerServing = attrByCat[category]?.kcalPerServing || 0;
+
+      // daily kcal from this category
+      totalDailyKcal += servingsPerDay * kcalPerServing;
+    }
+    totalDailyKcal += 130;
+    return totalDailyKcal;
+  }
+
 
   /* ===== CALC ===== */
   const calculateFootprint = () => {
@@ -307,6 +330,22 @@ const NFoodprintCalculator = () => {
     try {
       const sd = sheetData;
       const { isoByCountry, incomeByIso, vnfByCatByIncome, attrByCat } = buildLookups(sd);
+      // DEBUG START ----------------------------------
+      console.log("DEBUG — attrByCat:", attrByCat);
+      console.log("DEBUG — sample keys:", Object.keys(attrByCat));
+      console.log("DEBUG — beef entry:", attrByCat["beef"]);
+      console.log("DEBUG — poultry entry:", attrByCat["poultry"]);
+      console.log("DEBUG — grains and cereals:", attrByCat["grains and cereals"]);
+      console.log("DEBUG — foodInputs:", foodInputs);
+      console.log("DEBUG — attrByCat:", attrByCat);
+      console.log("DEBUG — sample keys:", Object.keys(attrByCat));
+      console.log("DEBUG — beef entry:", attrByCat["beef"]);
+      console.log("DEBUG — poultry entry:", attrByCat["poultry"]);
+      console.log("DEBUG — grains & cereals entry:", attrByCat["grains and cereals"]);
+      console.log("DEBUG — foodInputs:", foodInputs);   // ← ADD THIS
+
+      // DEBUG END ------------------------------------
+      const dailyCalories = computeDailyCalories(foodInputs, attrByCat);
 
       const countryISO = String(isoByCountry[selectedCountry] || '').trim().toUpperCase();
       const income = incomeByIso[countryISO];
@@ -387,12 +426,12 @@ const NFoodprintCalculator = () => {
 
       const countryEnergyData = sd.energy.find((e) => e.Country === selectedCountry);
       const TJ_to_m3 = 28428, TJ_to_kwh = 277778;
-      const e_factor_gas = 0.000690972;
-      const e_factor_car = 0.00012297;
+      const e_factor_gas = 0.000485;
+      const e_factor_car = 0.000189;
       const e_factor_flight = 0.128411244;
-      const e_factor_public_transport = 0.000575729;
+      const e_factor_public_transport = 0.0000963;
 
-      let e_factor_elec = 0.000906564;
+      let e_factor_elec = 0.000297;
       if (countryEnergyData && countryEnergyData.renewables) {
         const ef = parseNum(countryEnergyData.renewables);
         if (isFinite(ef) && ef > 0) e_factor_elec = ef;
@@ -443,6 +482,7 @@ const NFoodprintCalculator = () => {
            (parseNum(countryEnergyData['Other consumers (NG)'])                * TJ_to_m3 * e_factor_gas)
           ) / Math.max(1, parseNum(countryEnergyData.pop) || 1)
         ) : 0),
+        dailyCalories,
         foodBreakdown: { meat: adjMeat, dairy: adjDairy, plant: adjPlant },
         averageFoodBreakdown: { meat: adjAvgMeat, dairy: adjAvgDairy, plant: adjAvgPlant },
         energyBreakdown: userEnergyBreakdown,
@@ -739,12 +779,26 @@ const NFoodprintCalculator = () => {
                 {f.name.charAt(0).toUpperCase() + f.name.slice(1)}:
               </label>
               <input
-                id={`input-food-${f.name}`} type="number" min="0" value={foodInputs[f.name] || ''} onChange={(e) => handleFoodInput(f.name, e.target.value)} onWheel={(e) => handleWheel(e, f.name)}
+                id={`input-food-${f.name}`} type="number" min="0" value={foodInputs[f.name] || ''} onChange={(e) => handleFoodInput(f.name, e.target.value)}
                 className={`w-full max-w-[8rem] p-3 border rounded-md text-right text-xl appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0 ${darkMode ? 'bg-gray-600 border-gray-500 text-white focus:border-emerald-500' : 'bg-white border-gray-300 text-gray-900 focus:border-emerald-500'}`}
               />
             </div>
           ))}
         </div>
+
+        {/* Daily Calorie Counter */}
+        <div className={`p-4 rounded-lg shadow mb-6 ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-green-50 text-gray-800'}`}>
+          <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>
+            Estimated Daily Calorie Intake
+          </h3>
+          <p className="text-3xl font-bold">
+            {results?.dailyCalories ? results.dailyCalories.toFixed(0) : 0} kcal/day
+          </p>
+          <p className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            Recommended intake: <strong>2000 kcal/day (women)</strong>, <strong>2500 kcal/day (men)</strong>.
+          </p>
+        </div>
+
         
 
         {/* Energy Inputs */}
