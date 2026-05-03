@@ -223,12 +223,7 @@ const NFoodprintCalculator = () => {
   const handleFoodInput = (category, value) => {
     setFoodInputs((prev) => ({ ...prev, [category]: Math.max(0, parseInt(value || 0, 10)) }));
   };
-  const handleWheel = (e, category) => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 1 : -1;
-    const current = foodInputs[category] || 0;
-    handleFoodInput(category, current + delta);
-  };
+
   const getInputBorderGradient = () =>
     darkMode
       ? 'linear-gradient(to right, #1a1a2e, #16213e, #0f3460, #541690)'
@@ -407,7 +402,6 @@ const NFoodprintCalculator = () => {
         else userPlantN += preTreat;
       });
 
-      const removalRate = treatmentRemoval[sewerLevel] ?? 0.0;
       const adjusted_loss_cons_user = total_loss_cons_user * (1 - avgRemovalRate);
       const totalUserFood = Math.round((adjusted_loss_cons_user + total_loss_prod_user + total_loss_fuel_user) * 100) / 100;
 
