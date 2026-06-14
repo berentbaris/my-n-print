@@ -2,30 +2,19 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import logo from '../nprint_lite_new_logo.png';
 import { logCalculation } from '../firebase';
-//require('dotenv').config();
+import rawSheetData from '../sheetData.json';
 
 /* ===== CONFIG ===== */
-const VERSION = '4.3.0';
-const REACT_APP_GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
-const SPREADSHEET_IDS = { MAIN: '1duGMqR2pnJtMIUwQzKaEaFGrDqGaeJCEJLAhLvKvXIo' };
+const VERSION = '4.4.0';
 const SHEETS = {
   VNF: 'final_VNFs',
   ATTR: 'other_attributes',
   SEWAGE: 'sewage_ratings',
   FOOD_COUNTRY: 'food_country_data',
   ENERGY: 'country_energy_consumption_data_final',
-  INCOME: 'GDP',                 // columns: iso_a3, Income
-  SERVING_SIZES: 'serving_sizes' // columns: name, Serving size
+  INCOME: 'GDP',
+  SERVING_SIZES: 'serving_sizes'
 };
-
-/* ===== HELPERS ===== */
-async function fetchSheetData(spreadsheetId, sheetName, apiKey) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${apiKey}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Fetch failed ${sheetName}: ${res.status}`);
-  const data = await res.json();
-  return data.values || [];
-}
 
 function parseSheetData(values, headers) {
   const [, ...rows] = values || [];
@@ -140,54 +129,33 @@ const NFoodprintCalculator = () => {
 
   const [showServingPanel, setShowServingPanel] = useState(false);
 
-  /* ===== LOAD DATA ===== */
+  /* ===== LOAD DATA (bundled JSON — no network calls) ===== */
   useEffect(() => {
-    const refreshData = async () => {
-      setIsLoading(true);
-      try {
-        const [
-          vnfRaw, sewageRaw, foodRaw, energyRaw, incomeRaw, attrRaw, servingRaw
-        ] = await Promise.all([
-          fetchSheetData(SPREADSHEET_IDS.MAIN, SHEETS.VNF, REACT_APP_GOOGLE_API_KEY),
-          fetchSheetData(SPREADSHEET_IDS.MAIN, SHEETS.SEWAGE, REACT_APP_GOOGLE_API_KEY),
-          fetchSheetData(SPREADSHEET_IDS.MAIN, SHEETS.FOOD_COUNTRY, REACT_APP_GOOGLE_API_KEY),
-          fetchSheetData(SPREADSHEET_IDS.MAIN, SHEETS.ENERGY, REACT_APP_GOOGLE_API_KEY),
-          fetchSheetData(SPREADSHEET_IDS.MAIN, SHEETS.INCOME, REACT_APP_GOOGLE_API_KEY),
-          fetchSheetData(SPREADSHEET_IDS.MAIN, SHEETS.ATTR, REACT_APP_GOOGLE_API_KEY),
-          fetchSheetData(SPREADSHEET_IDS.MAIN, SHEETS.SERVING_SIZES, REACT_APP_GOOGLE_API_KEY),
-        ]);
+    try {
+      const parsed = {
+        vnf: parseSheetData(rawSheetData[SHEETS.VNF], vnfHeaders),
+        sewage: parseSheetData(rawSheetData[SHEETS.SEWAGE], sewageHeaders),
+        foodCountry: parseSheetData(rawSheetData[SHEETS.FOOD_COUNTRY], foodCountryHeaders),
+        energy: parseSheetData(rawSheetData[SHEETS.ENERGY], energyHeaders),
+        income: parseSheetData(rawSheetData[SHEETS.INCOME], incomeHeaders),
+        attr: parseSheetData(rawSheetData[SHEETS.ATTR], attrHeaders),
+        servingSizes: parseSheetData(rawSheetData[SHEETS.SERVING_SIZES], servingSizeHeaders),
+      };
+      setSheetData(parsed);
 
-        const parsed = {
-          vnf: parseSheetData(vnfRaw, vnfHeaders),
-          sewage: parseSheetData(sewageRaw, sewageHeaders),
-          foodCountry: parseSheetData(foodRaw, foodCountryHeaders),
-          energy: parseSheetData(energyRaw, energyHeaders),
-          income: parseSheetData(incomeRaw, incomeHeaders),
-          attr: parseSheetData(attrRaw, attrHeaders),
-          servingSizes: parseSheetData(servingRaw, servingSizeHeaders),
-        };
-        setSheetData(parsed);
+      const foodCountries   = new Set(parsed.foodCountry.map(d => d.Area).filter(Boolean));
+      const energyCountries = new Set(parsed.energy.map(d => d.Country).filter(Boolean));
+      const all = [...new Set([...foodCountries, ...energyCountries])].filter(
+        (c) => !['China, Macao SAR','Micronesia (Federated States of)','Tuvalu'].includes(c)
+      );
+      setCountries(all.sort());
 
-        const foodCountries   = new Set(parsed.foodCountry.map(d => d.Area).filter(Boolean));
-        const energyCountries = new Set(parsed.energy.map(d => d.Country).filter(Boolean));
-        const all = [...new Set([...foodCountries, ...energyCountries])].filter(
-          (c) => !['China, Macao SAR','Micronesia (Federated States of)','Tuvalu'].includes(c)
-        );
-        setCountries(all.sort());
-
-        window._NPRINT_SD = parsed;
-      } catch (e) {
-        console.error('Data load error:', e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    refreshData();
-    const id = setInterval(refreshData, 5 * 60 * 1000);
-    const onVis = () => { if (document.visibilityState === 'visible') refreshData(); };
-    document.addEventListener('visibilitychange', onVis);
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+      window._NPRINT_SD = parsed;
+    } catch (e) {
+      console.error('Data load error:', e);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   // Auto scroll to results after the first successful calculation only
