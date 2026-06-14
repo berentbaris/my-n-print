@@ -19,6 +19,8 @@ jobs:
       - run: npm ci
 
       - run: CI=false npm run build
+        env:
+          REACT_APP_GOOGLE_API_KEY: ${{ secrets.REACT_APP_GOOGLE_API_KEY }}
 
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
