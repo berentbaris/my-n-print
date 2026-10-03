@@ -46,6 +46,28 @@ All v4.3 tasks complete.
 
 ---
 
+---
+
+## Milestone: v5.0 — round-2 revision methodology (2026-10-03)
+
+The reviewers asked for the app to match the revised paper. Done this session:
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Data from the paper's pipeline (`src/data/appData.json`, made by `export_app_data.py`); old `sheetData.json` no longer used | ✅ |
+| 2 | Calculation module `src/calc/calc.js` + test that defaults reproduce Supplementary Table 1 (181 countries) | ✅ |
+| 3 | National-average defaults for all inputs + reset button | ✅ |
+| 4 | Serving sizes in grams and household measures next to each input | ✅ |
+| 5 | Calorie counter fixed (kcal_per_serving in data); 130 kcal oils/fats only once ≥1 serving entered | ✅ |
+| 6 | Food-waste level (low/average/high); note that servings = food eaten; excluded food groups listed | ✅ |
+| 7 | Renewable electricity; electric vs combustion car; other household fuels (none / national) | ✅ |
+| 8 | Comparison with national average per food group and energy component; EAT-Lancet comparison | ✅ |
+| 9 | Results by loss pathway (food: leaching, volatilization, N₂O, wastewater, food-chain energy; energy: NOₓ, NH₃, N₂O) | ✅ |
+| 10 | Flags for imputed and imports-only VNFs and imputed emission factors | ✅ |
+| 11 | "What you can do" panel (largest gaps vs national average + general options) | ✅ |
+| 12 | FAQ and JSON-LD numbers updated; version 5.0.0; extra Firestore fields | ✅ |
+| 13 | Author: check household measures + recommendation wording, then push to `main` to deploy | ⏳ |
+
 ## Current status
 
 Tasks 1–11 done. Session 6 added SEO improvements: meta description, keywords, Open Graph and Twitter Card tags, canonical URL, JSON-LD structured data (WebApplication + FAQPage schemas), restored the hero `<h1>` with visible title text, and added a 4-question FAQ section below the calculator. These changes help Google index and rank the site for nitrogen footprint queries and enable rich snippet display in search results.

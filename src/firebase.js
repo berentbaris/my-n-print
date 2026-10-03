@@ -72,6 +72,13 @@ export async function logCalculation(data) {
     energyFootprint: round2(data.energyFootprint),
     totalFootprint: round2(data.totalFootprint),
     dailyCalories: Math.round(data.dailyCalories || 0),
+    iso: data.iso || '',
+    usedDefaults: !!data.usedDefaults,
+    wasteLevel: data.wasteLevel || '',
+    carType: data.carType || '',
+    renewable: !!data.renewable,
+    otherFuels: data.otherFuels || '',
+    spending: data.spending || '',
     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
     appVersion: data.appVersion || '',
   };
