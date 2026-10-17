@@ -6,7 +6,7 @@ import logo from '../nprint_lite_new_logo.png';
 import { logCalculation } from '../firebase';
 import data from '../data/appData.json';
 import {
-  defaultInputs, computeAll, nationalAverage, eatLancet, dailyCalories, biggestGaps,
+  defaultInputs, computeAll, nationalAverage, eatLancet, calorieBreakdown, biggestGaps,
   ENERGY_KEYS, ENERGY_LABELS, wasteFactor,
 } from '../calc/calc';
 
@@ -139,8 +139,9 @@ const NFootprintCalculator = () => {
     return s;
   }, [food]);
 
-  // live calorie estimate (130 kcal/day oils & fats added only once at least one serving is entered)
-  const liveCalories = useMemo(() => dailyCalories(data, servings), [servings]);
+  // live calorie estimate; oils & fats scale with the national supply and with how much the user eats
+  const kcalParts = useMemo(() => calorieBreakdown(data, servings, iso), [servings, iso]);
+  const liveCalories = kcalParts.total;
 
   const inputs = useMemo(() => (iso ? {
     iso,
@@ -450,7 +451,7 @@ const NFootprintCalculator = () => {
               </div>
               <p className={`mt-6 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 Recommended: <strong>2,000 kcal/day</strong> (women) · <strong>2,500 kcal/day</strong> (men).
-                {liveCalories > 0 && ` Includes about ${data.oils_fats_kcal} kcal/day from oils and fats, which are not entered separately.`}
+                {liveCalories > 0 && ` Includes about ${Math.round(kcalParts.oilsFats)} kcal/day from cooking oils and fats, which are not entered separately: the average use in ${country ? country.name : 'your country'}, scaled to how much you eat.`}
                 {' '}Use this to check that your servings are realistic.
               </p>
             </div>

@@ -1,5 +1,10 @@
 # My-N-Print — Progress Log
 
+## 2026-10-07 (EAT-Lancet + calories)
+- EAT-Lancet servings are now intakes (household waste no longer subtracted) — matches the paper fix.
+- Calorie estimate: oils & fats = national FAOSTAT supply of vegetable oils (8,840 kcal/kg) and animal fats (7,200 kcal/kg), scaled by the user's kcal from the 15 food groups relative to the national default diet (new per-country fields `oils_fats_kcal`, `kcal15` in appData.json). Replaces the flat 130 kcal. 0 when no servings are entered.
+- 186 tests pass; build compiles. Push to `main` to deploy.
+
 ## 2026-10-03 (session 7 — v5.0, round-2 methodology)
 
 - Rebuilt the app on the round-2 paper methodology. All data now come from `src/data/appData.json`, exported from the paper pipeline by `N footprint calculator\my_n_print_vnfs\export_app_data.py` (country × food-group × pathway VNFs, wastewater removal 1 − SC×NR, food-chain energy, EDGAR v8.0 2022 emission factors, national per capita energy, pollutant shares).

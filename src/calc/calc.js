@@ -139,26 +139,32 @@ export function nationalAverage(data, iso) {
   return computeAll(data, defaultInputs(data, iso));
 }
 
-/** Food footprint of the EAT-Lancet reference diet in the user's country (same VNFs, waste and treatment). */
+/** Food footprint of the EAT-Lancet reference diet in the user's country (same VNFs and treatment).
+ *  EAT-Lancet quantities are amounts eaten, so household waste is not subtracted. */
 export function eatLancet(data, iso) {
   const servings = {};
   data.categories.forEach((cat) => {
-    servings[cat.key] = (cat.eat_kg_yr * (1 - cat.waste)) / cat.serving_kg / 52;
+    servings[cat.key] = cat.eat_kg_yr / cat.serving_kg / 52;
   });
   return { servings, ...computeFood(data, iso, servings, 'average') };
 }
 
-/** Estimated daily energy intake (kcal/day). Oils and fats (not a food group in the calculator)
- *  add a fixed 130 kcal/day, but only once the user has entered at least one serving. */
-export function dailyCalories(data, servings) {
+/** Estimated daily energy intake (kcal/day), split into the 15 food groups and oils and fats.
+ *  Oils and fats are not a calculator food group. They are estimated from the national supply of
+ *  vegetable oils and animal fats, scaled by how much the user eats from the 15 groups compared with
+ *  the national average (so the default diet gets the national value, and an empty diet gets 0). */
+export function calorieBreakdown(data, servings, iso) {
   let kcal = 0;
-  let any = false;
   data.categories.forEach((cat) => {
-    const s = num(servings?.[cat.key]);
-    if (s > 0) any = true;
-    kcal += (s / 7) * cat.kcal;
+    kcal += (num(servings?.[cat.key]) / 7) * cat.kcal;
   });
-  return any ? kcal + data.oils_fats_kcal : 0;
+  const c = iso ? data.countries[iso] : null;
+  const oils = c && c.kcal15 > 0 ? c.oils_fats_kcal * (kcal / c.kcal15) : 0;
+  return { foods: kcal, oilsFats: oils, total: kcal + oils };
+}
+
+export function dailyCalories(data, servings, iso) {
+  return calorieBreakdown(data, servings, iso).total;
 }
 
 /** Components where the user is furthest above the national average (kg N/yr), largest first. */

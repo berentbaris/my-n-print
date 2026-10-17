@@ -2,7 +2,7 @@
 // the national footprints published in the paper (Supplementary Table 1 / Supplementary Data 1).
 // Run: npm test -- --watchAll=false
 import data from '../data/appData.json';
-import { nationalAverage, dailyCalories, computeFood, eatLancet } from './calc';
+import { nationalAverage, dailyCalories, calorieBreakdown, computeFood, eatLancet, defaultInputs } from './calc';
 
 const TOL = 0.01; // kg N per capita per year
 
@@ -30,11 +30,23 @@ test('pathways add up to the food total', () => {
   expect(Math.abs(e.NOx + e.NH3 + e.N2O - r.energy.total)).toBeLessThan(1e-4);
 });
 
-test('calorie estimate: 0 with no servings, +130 kcal oils/fats once a serving is entered', () => {
-  expect(dailyCalories(data, {})).toBe(0);
-  const one = dailyCalories(data, { eggs: 7 });
-  const eggs = data.categories.find((c) => c.key === 'eggs').kcal;
-  expect(Math.abs(one - (eggs + 130))).toBeLessThan(1e-6);
+test('calorie estimate: 0 with no servings; oils and fats scale with the diet', () => {
+  expect(dailyCalories(data, {}, 'DEU')).toBe(0);
+  const c = data.countries.DEU;
+  const d = defaultInputs(data, 'DEU');
+  // national default diet gets exactly the national oils-and-fats value
+  const k = calorieBreakdown(data, d.servings, 'DEU');
+  expect(Math.abs(k.oilsFats - c.oils_fats_kcal)).toBeLessThan(0.5);
+  // half the food -> half the oils and fats
+  const half = {};
+  Object.keys(d.servings).forEach((key) => { half[key] = d.servings[key] / 2; });
+  expect(Math.abs(calorieBreakdown(data, half, 'DEU').oilsFats - c.oils_fats_kcal / 2)).toBeLessThan(0.5);
+});
+
+test('EAT-Lancet servings are intakes (no household waste subtracted)', () => {
+  const e = eatLancet(data, 'DEU');
+  const g = data.categories.find((x) => x.key === 'grains and cereals');
+  expect(Math.abs(e.servings[g.key] - g.eat_kg_yr / g.serving_kg / 52)).toBeLessThan(1e-9);
 });
 
 test('low household waste lowers production losses, high waste raises them', () => {
