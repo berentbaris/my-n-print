@@ -11,7 +11,7 @@ Barış, B.T., Erisman, J.W., Crowe, D.A., Leach, A.M., Bleeker, A., Galloway, J
 - `src/calc/calc.test.js` checks that the default inputs (national averages) reproduce the published national footprint of every country (Supplementary Table 1), within 0.01 kg N per capita.
 - `src/components/NFootprintCalculator.jsx` is the user interface.
 
-No external data calls are made; calculations are logged anonymously to Firestore (`src/firebase.js`).
+Reference data are bundled with the app. Every completed calculation and every result displayed after an answer changes is saved to the private Firestore `calculations` collection. Visitors can download their current detailed results as a PDF.
 
 ## Develop
 
@@ -24,11 +24,33 @@ CI=false npm run build
 
 Pushing to `main` builds and deploys to Firebase Hosting (`.github/workflows/firebase-deploy.yml`).
 
+## Detailed result storage and PDF export
+
+- Each result is a separate document; recalculations and edits never replace earlier results. No results are logged until the visitor first clicks Calculate.
+- Schema v2 saves every numeric input and raw answer, all food groups (nitrogen eaten, production, wastewater, food-chain energy and production pathways), every energy component and pollutant, calories, totals, national-average and EAT-Lancet comparisons, recommendations, units, data flags, and the country reference factors/constants needed to reproduce that calculation. Numeric results retain full precision.
+- Anonymous visitor/session IDs link calculations from the same browser/session. No name, email or IP address is collected by the app. IDs can change when a visitor clears browser storage.
+- Each document has an immutable UUID and a client ISO timestamp representing when the result was shown, including results uploaded after an offline period. Client timestamps and submitted results are not independently verified by the server.
+- An IndexedDB outbox holds **all** pending snapshots until Firestore confirms them. It retries on page load, reconnection and every 30 seconds. Identical retries use the same document ID. When browser storage is unavailable, records remain in memory and the UI asks the visitor to keep the page open until saved. Records cannot be recovered if the visitor clears browser storage or never reconnects.
+- The PDF button appears above the results. It downloads a paginated, selectable-text report with answers, full breakdowns, comparisons, pathways, recommendations, serving sizes and data notes, including pathways hidden on screen. PDF code loads only when exporting. Export works even if cloud saving is unavailable.
+- `firestore.rules` allows validated creates and identical retries only. Public clients cannot read, change or delete stored records; project administrators can access them in the [Firestore console](https://console.firebase.google.com/project/my-nprint/firestore/databases/-default-/data/~2Fcalculations). Existing v1 records are retained with their original, limited fields; previously missing details cannot be reconstructed.
+
+### Firebase setup and deployment
+
+1. Ensure the Firebase project `my-nprint` has a **default Firestore database** created in the Firebase console.
+2. Supply a Firebase web API key that permits Firestore. Local `.env` uses `REACT_APP_FIREBASE_API_KEY`, falling back to `REACT_APP_GOOGLE_API_KEY`; `REACT_APP_FIREBASE_APP_ID` is optional. Never put service-account credentials in the browser app. In GitHub Actions, configure the equivalent repository secrets and `FIREBASE_TOKEN`.
+3. Deploy both the app and rules: `npm run build`, then `firebase deploy --only hosting,firestore:rules --project my-nprint`. The `main` workflow now deploys both. If Firebase credentials have expired, run `firebase login --reauth` first.
+4. Verify one real calculation, then one input edit: two separate schema-v2 documents should appear in `calculations`, and the UI should say **All results saved**. Test an offline calculation followed by reconnection as well. Publishing the app alone does not prove the database is enabled or writable.
+
+For local tests without writing to production, set `REACT_APP_FIRESTORE_EMULATOR_HOST=127.0.0.1:8080` and run a Firestore emulator on that address before starting the app. Tests mock Firestore and never write production records.
+
+The application imposes no retention limit or automatic deletion. Firestore quotas, billing, network access and available device storage still constrain collection. Public submissions are untrusted; these rules validate the record structure but do not prevent automated submissions. Monitor storage/write usage in the Firebase console.
+
 ## Updating the data
 
 Re-run the analysis pipeline (`build_mnp_vnfs.py`, `energy_round2.py`, `food_footprint_round2.py`, `combine_round2.py`), then `export_app_data.py`, then `npm test`.
 
 ## Version history
 
+- 5.1.0 (2026): corrected ammonia volatilization label; detailed PDF downloads; complete, full-precision result snapshots for calculations and live edits; durable offline outbox, retry status, validated private records, and database rules included in deployment.
 - 5.0.0 (2026): round-2 revision methodology — country- and pathway-specific, trade-adjusted VNFs; corrected wastewater term; EDGAR v8.0 2022 energy with per-km and per-hour factors; national-average defaults; food-waste level, renewable electricity and electric car options; comparison with national average and EAT-Lancet diet; results by pathway; data flags; recommendations.
 - 4.x (2025–2026): income-group VNFs (first submission). Archived in `_archive_v4/`.

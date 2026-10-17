@@ -1,10 +1,54 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Calculation log — append-only, no reads from the client
+    function validCalculation(docId) {
+      let d = request.resource.data;
+      return d.keys().hasAll([
+        'id', 'visitorId', 'sessionId', 'timestamp', 'schemaVersion', 'eventType',
+        'appVersion', 'country', 'iso', 'inputs', 'rawInputs', 'results',
+        'referenceData', 'recommendations', 'pathways', 'units',
+        'foodFootprint', 'energyFootprint', 'totalFootprint', 'dailyCalories'
+      ])
+      && d.keys().hasOnly([
+        'id', 'visitorId', 'sessionId', 'timestamp', 'schemaVersion', 'eventType',
+        'appVersion', 'dataVersion', 'dataYear', 'country', 'iso', 'inputs',
+        'rawInputs', 'results', 'referenceData', 'recommendations', 'pathways',
+        'units', 'foodFootprint', 'energyFootprint', 'totalFootprint',
+        'dailyCalories', 'usedDefaults', 'wasteLevel', 'carType', 'renewable',
+        'otherFuels', 'spending'
+      ])
+      && d.schemaVersion == 2
+      && d.id == docId && docId.size() == 36
+      && d.visitorId is string && d.visitorId.size() == 36
+      && d.sessionId is string && d.sessionId.size() == 36
+      && d.timestamp is string && d.timestamp.size() == 24
+      && d.eventType in ['calculate', 'input-change']
+      && d.appVersion is string && d.appVersion.size() < 32
+      && d.country is string && d.country.size() > 0 && d.country.size() < 200
+      && d.iso is string && d.iso.size() == 3
+      && d.inputs is map && d.inputs.iso == d.iso && d.inputs.servings is map
+      && d.rawInputs is map && d.results is map && d.referenceData is map
+      && d.results.user is map && d.results.avg is map && d.results.eat is map
+      && d.results.user.food is map && d.results.user.energy is map
+      && d.results.user.food.rows is list && d.results.user.food.rows.size() <= 100
+      && d.results.user.food.pathways is map && d.results.user.energy.parts is map
+      && d.recommendations is list && d.recommendations.size() <= 3
+      && d.pathways is list && d.pathways.size() == 9 && d.units is map
+      && d.foodFootprint is number && d.foodFootprint >= 0
+      && d.energyFootprint is number && d.energyFootprint >= 0
+      && d.totalFootprint is number && d.totalFootprint >= 0
+      && d.dailyCalories is number && d.dailyCalories >= 0
+      && d.results.user.food.total == d.foodFootprint
+      && d.results.user.energy.total == d.energyFootprint
+      && d.results.user.total == d.totalFootprint;
+    }
+
+    // Public visitors can append validated records, but cannot read any records
+    // or change/delete previous results. Identical retries are harmless.
     match /calculations/{docId} {
-      allow create: if true;
-      allow read, update, delete: if false;
+      allow create: if validCalculation(docId);
+      allow update: if validCalculation(docId) && request.resource.data == resource.data;
+      allow read, delete: if false;
     }
 
     // Default: deny everything else

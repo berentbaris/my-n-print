@@ -1,96 +1,103 @@
-/**
- * Firebase / Firestore initialisation.
- *
- * The Firebase compat SDK is loaded via <script> tags in public/index.html,
- * so `window.firebase` is available globally. This module initialises the app
- * once and exports a Firestore reference for use throughout the codebase.
- *
- * SETUP REQUIRED (one-time, in the Firebase console):
- *  1. Go to https://console.firebase.google.com/project/my-nprint/firestore
- *     and click "Create database" (choose production mode, any region).
- *  2. In Firestore → Rules, set:
- *       rules_version = '2';
- *       service cloud.firestore {
- *         match /databases/{database}/documents {
- *           match /calculations/{doc} {
- *             allow create: if true;   // anyone can log a calculation
- *             allow read, update, delete: if false;
- *           }
- *         }
- *       }
- *  3. If the existing Google API key doesn't work for Firestore,
- *     copy the "Web API Key" from Project Settings → General and
- *     set REACT_APP_FIREBASE_API_KEY in .env.
- */
-
-/* global firebase */
+import { getApps, initializeApp } from 'firebase/app';
+import { getFirestore, connectFirestoreEmulator, doc, setDoc } from 'firebase/firestore';
+import { acknowledge, enqueue, newId, pendingRecords, visitorIdentity } from './results/queue';
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY
-    || process.env.REACT_APP_GOOGLE_API_KEY,
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || process.env.REACT_APP_GOOGLE_API_KEY,
   authDomain: 'my-nprint.firebaseapp.com',
   projectId: 'my-nprint',
   storageBucket: 'my-nprint.firebasestorage.app',
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || '',   // optional for Firestore writes
+  ...(process.env.REACT_APP_FIREBASE_APP_ID ? { appId: process.env.REACT_APP_FIREBASE_APP_ID } : {}),
 };
 
-let db = null;
-
-/**
- * Returns a Firestore instance, lazily initialising Firebase on first call.
- * Returns `null` if the SDK isn't loaded (e.g. ad-blocker, offline).
- */
+let db;
 export function getDb() {
-  if (db) return db;
-  try {
-    if (typeof firebase === 'undefined' || !firebase.firestore) {
-      console.warn('[firebase] SDK not loaded — calculation logging disabled.');
-      return null;
+  if (!firebaseConfig.apiKey) throw new Error('Firebase API key is missing');
+  if (!db) {
+    db = getFirestore(getApps()[0] || initializeApp(firebaseConfig));
+    if (process.env.REACT_APP_FIRESTORE_EMULATOR_HOST) {
+      const [host, port] = process.env.REACT_APP_FIRESTORE_EMULATOR_HOST.split(':');
+      connectFirestoreEmulator(db, host, Number(port));
     }
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    db = firebase.firestore();
-    return db;
-  } catch (err) {
-    console.warn('[firebase] Init failed — calculation logging disabled.', err);
-    return null;
   }
+  return db;
 }
 
-/**
- * Save a completed footprint calculation to the "calculations" collection.
- * Fire-and-forget: failures are logged but never block the UI.
- */
-export async function logCalculation(data) {
-  const store = getDb();
-  if (!store) return;
+const listeners = new Set();
+const inFlight = new Map();
+const failed = new Set();
+const volatile = new Set();
+let status = { state: 'idle', pending: 0 };
 
-  const doc = {
-    country: data.country || '',
-    foodFootprint: round2(data.foodFootprint),
-    energyFootprint: round2(data.energyFootprint),
-    totalFootprint: round2(data.totalFootprint),
-    dailyCalories: Math.round(data.dailyCalories || 0),
-    iso: data.iso || '',
-    usedDefaults: !!data.usedDefaults,
-    wasteLevel: data.wasteLevel || '',
-    carType: data.carType || '',
-    renewable: !!data.renewable,
-    otherFuels: data.otherFuels || '',
-    spending: data.spending || '',
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    appVersion: data.appVersion || '',
+function publish(next) {
+  status = next;
+  listeners.forEach((listener) => listener(status));
+}
+
+export function subscribeToStorage(listener) {
+  listeners.add(listener);
+  listener(status);
+  return () => listeners.delete(listener);
+}
+
+async function refreshStatus() {
+  const records = await pendingRecords();
+  const pending = records.length;
+  const delayed = [...inFlight.values()].some((startedAt) => Date.now() - startedAt > 15000);
+  publish({ state: !pending ? 'saved' : volatile.size ? 'temporary' : failed.size ? 'error' : navigator.onLine === false ? 'offline' : delayed ? 'pending' : 'saving', pending });
+}
+
+export async function retryPendingCalculations() {
+  const records = await pendingRecords();
+  if (!records.length) return;
+  if (navigator.onLine === false) { await refreshStatus(); return; }
+  let store;
+  try { store = getDb(); } catch (err) {
+    publish({ state: volatile.size ? 'temporary' : 'error', pending: records.length });
+    console.warn('[results] Storage unavailable:', err.message);
+    return;
+  }
+  for (const record of records) {
+    if (inFlight.has(record.id)) continue;
+    inFlight.set(record.id, Date.now());
+    failed.delete(record.id);
+    // A slow/offline write must not block later results. Fixed IDs and fixed
+    // timestamps make identical retries safe even after a page reload.
+    setDoc(doc(store, 'calculations', record.id), record)
+      .then(async () => { await acknowledge(record.id); volatile.delete(record.id); })
+      .catch((err) => {
+        failed.add(record.id);
+        console.warn('[results] Save failed; snapshot retained for retry:', err.code);
+      })
+      .finally(() => { inFlight.delete(record.id); refreshStatus(); });
+  }
+  await refreshStatus();
+}
+
+export function startCalculationStorage() {
+  const online = () => retryPendingCalculations();
+  const offline = () => refreshStatus();
+  window.addEventListener('online', online);
+  window.addEventListener('offline', offline);
+  const retryTimer = window.setInterval(online, 30000);
+  online();
+  return () => {
+    window.removeEventListener('online', online);
+    window.removeEventListener('offline', offline);
+    window.clearInterval(retryTimer);
   };
-
-  try {
-    await store.collection('calculations').add(doc);
-  } catch (err) {
-    // Silently swallow — never break the user's result view
-    console.warn('[firebase] Failed to log calculation:', err.message);
-  }
 }
 
-function round2(n) {
-  return Math.round((Number(n) || 0) * 100) / 100;
+/** Capture every result without rounding; never overwrite a previous result. */
+export async function logCalculation(snapshot, eventType = 'calculate') {
+  const record = {
+    ...snapshot, ...visitorIdentity(), id: newId(), eventType,
+    // Moment the result was displayed, even if it is uploaded days later.
+    timestamp: new Date().toISOString(),
+  };
+  const durable = await enqueue(record);
+  if (!durable) volatile.add(record.id);
+  publish({ state: durable ? navigator.onLine === false ? 'offline' : 'saving' : 'temporary', pending: (await pendingRecords()).length });
+  retryPendingCalculations();
+  return record.id;
 }

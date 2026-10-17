@@ -1,9 +1,21 @@
 # My-N-Print — Progress Log
 
+<<<<<<< Updated upstream
 ## 2026-10-07 (EAT-Lancet + calories)
 - EAT-Lancet servings are now intakes (household waste no longer subtracted) — matches the paper fix.
 - Calorie estimate: oils & fats = national FAOSTAT supply of vegetable oils (8,840 kcal/kg) and animal fats (7,200 kcal/kg), scaled by the user's kcal from the 15 food groups relative to the national default diet (new per-country fields `oils_fats_kcal`, `kcal15` in appData.json). Replaces the flat 130 kcal. 0 when no servings are entered.
 - 186 tests pass; build compiles. Push to `main` to deploy.
+=======
+## 2026-10-08 — v5.1, PDF export and complete result storage
+
+- Changed the food-production volatilization label to `Volatilization, NH₃ (food production)` and the accompanying explanation to ammonia. Screen and PDF share the same pathway labels.
+- Added an Export results as PDF button that lazily loads the PDF generator. The paginated report includes current answers, food/energy totals and components, pathways, national/EAT-Lancet comparisons, serving measures, recommendations and data notes. Generated and visually checked a four-page Germany sample.
+- Replaced total-only Firestore logging with full-precision schema-v2 snapshots, including every raw/parsed input, option, food/energy result, pollutant/pathway, comparison, recommendation, and reference data needed to reproduce the calculation. Every completed calculation and live answer edit gets its own record, with anonymous browser/session IDs.
+- Added an IndexedDB outbox, stable record IDs for safe retries, automatic retry on reload/reconnection, and save/pending/error statuses. No app retention cap or deletion is applied.
+- Bundled the Firebase SDK via npm; removed CDN script dependencies. Validated Firestore records remain private; retries may write identical records but cannot change previous results. The hosting workflow now deploys Firestore rules too.
+- Validation: 190 tests pass (including UI under StrictMode, full snapshots, failed-upload retry, and IndexedDB persistence across module reload); production build compiles; PDF pages visually inspected. Browser preview timed out, so UI behavior was verified with React Testing Library.
+- Live verification is outstanding: local Firebase credentials are expired (`firebase login --reauth` required). Ensure the default database is enabled, deploy hosting and rules, and confirm a calculation + live edit produce two schema-v2 records. Existing older records retain only the fields originally recorded.
+>>>>>>> Stashed changes
 
 ## 2026-10-03 (session 7 — v5.0, round-2 methodology)
 

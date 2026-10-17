@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
 } from 'recharts';
 import logo from '../nprint_lite_new_logo.png';
-import { logCalculation } from '../firebase';
+import { logCalculation, retryPendingCalculations, startCalculationStorage, subscribeToStorage } from '../firebase';
+import { createSnapshot, pathwayComparisons } from '../results/snapshot';
 import data from '../data/appData.json';
 import {
   defaultInputs, computeAll, nationalAverage, eatLancet, calorieBreakdown, biggestGaps,
@@ -11,7 +12,7 @@ import {
 } from '../calc/calc';
 
 /* ===== CONFIG ===== */
-const VERSION = '5.0.0';
+const VERSION = '5.1.0';
 const COUNTRY_LIST = Object.entries(data.countries)
   .map(([iso, c]) => ({ iso, name: c.name }))
   .sort((a, b) => a.name.localeCompare(b.name));
@@ -85,6 +86,11 @@ const NFootprintCalculator = () => {
   const [hasScrolled, setHasScrolled] = useState(false);
   const [showServingPanel, setShowServingPanel] = useState(false);
   const [showPathways, setShowPathways] = useState(false);
+  const [calculationRequest, setCalculationRequest] = useState(0);
+  const [storageStatus, setStorageStatus] = useState({ state: 'idle', pending: 0 });
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const lastLogged = useRef(null);
 
   const country = iso ? data.countries[iso] : null;
 
@@ -163,6 +169,27 @@ const NFootprintCalculator = () => {
     return { user, avg, eat, gaps: biggestGaps(user, avg, 3) };
   }, [calculated, inputs, iso]);
 
+  const snapshot = useMemo(() => results ? createSnapshot({
+    data, inputs, results, usedDefaults: !touched, appVersion: VERSION,
+    rawInputs: { food, energy: en, options: opts },
+    recommendations: results.gaps.map((gap) => ({ ...gap, tip: TIPS[gap.key] || TIPS.default_food })),
+  }) : null, [results, inputs, touched, food, en, opts]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToStorage(setStorageStatus);
+    const stop = startCalculationStorage();
+    return () => { unsubscribe(); stop(); };
+  }, []);
+
+  useEffect(() => {
+    if (!snapshot) return;
+    const previous = lastLogged.current;
+    if (previous?.snapshot === snapshot && previous.request === calculationRequest) return;
+    lastLogged.current = { snapshot, request: calculationRequest };
+    const event = !previous || previous.request !== calculationRequest ? 'calculate' : 'input-change';
+    logCalculation(snapshot, event).catch(() => setStorageStatus({ state: 'error', pending: 1 }));
+  }, [snapshot, calculationRequest]);
+
   useEffect(() => {
     if (results && !hasScrolled) {
       const el = document.getElementById('results-section');
@@ -173,22 +200,19 @@ const NFootprintCalculator = () => {
   const calculate = () => {
     if (!inputs) return;
     setCalculated(true);
-    const r = computeAll(data, inputs);
-    logCalculation({
-      country: country.name,
-      iso,
-      foodFootprint: r.food.total,
-      energyFootprint: r.energy.total,
-      totalFootprint: r.total,
-      dailyCalories: liveCalories,
-      usedDefaults: !touched,
-      wasteLevel: opts.waste,
-      carType: opts.car_type,
-      renewable: !!opts.renewable,
-      otherFuels: opts.other_fuels,
-      spending: opts.spending,
-      appVersion: VERSION,
-    });
+    setCalculationRequest((request) => request + 1);
+  };
+
+  const exportPdf = async () => {
+    if (!snapshot || exporting) return;
+    setExporting(true);
+    setExportError('');
+    try {
+      const { downloadResultsPdf } = await import('../results/pdf');
+      downloadResultsPdf(snapshot);
+    } catch {
+      setExportError('The PDF could not be downloaded. Please try again.');
+    } finally { setExporting(false); }
   };
 
   const toggleDarkMode = () => {
@@ -239,21 +263,7 @@ const NFootprintCalculator = () => {
   const energyCompare = results ? ENERGY_KEYS.map((k) => ({
     name: ENERGY_LABELS[k], You: results.user.energy.parts[k], 'National average': results.avg.energy.parts[k],
   })) : [];
-  const pathwayRows = results ? (() => {
-    const u = results.user; const a = results.avg;
-    const rows = [
-      { name: 'Leaching & runoff (food production)', You: u.food.pathways.leaching, 'National average': a.food.pathways.leaching },
-      { name: 'Volatilization, NH₃ + NOₓ (food production)', You: u.food.pathways.volatilization, 'National average': a.food.pathways.volatilization },
-      { name: 'N₂O (food production)', You: u.food.pathways.n2o, 'National average': a.food.pathways.n2o },
-      { name: 'Fish & seafood (pathway not available)', You: u.food.pathways.unspecified, 'National average': a.food.pathways.unspecified },
-      { name: 'Wastewater (after treatment)', You: u.food.pathways.wastewater, 'National average': a.food.pathways.wastewater },
-      { name: 'Food-chain energy (farm fuel, processing)', You: u.food.pathways.foodEnergy, 'National average': a.food.pathways.foodEnergy },
-      { name: 'NOₓ (energy)', You: u.energy.pollutants.NOx, 'National average': a.energy.pollutants.NOx },
-      { name: 'NH₃ (energy)', You: u.energy.pollutants.NH3, 'National average': a.energy.pollutants.NH3 },
-      { name: 'N₂O (energy)', You: u.energy.pollutants.N2O, 'National average': a.energy.pollutants.N2O },
-    ];
-    return rows;
-  })() : [];
+  const pathwayRows = results ? pathwayComparisons(results) : [];
 
   const narrow = typeof window !== 'undefined' && window.innerWidth < 640;
   const compareChart = (rows, height) => (
@@ -545,12 +555,38 @@ const NFootprintCalculator = () => {
             {calculated ? 'Recalculate N-Print' : 'Calculate N-Print'}
           </button>
         </div>
+        <p className={`mt-3 text-center ${subCls}`}>
+          Your answers and detailed results are saved automatically for analysis, with an anonymous visitor ID.
+        </p>
         {calculated && <p className={`mt-2 text-center ${subCls}`}>Results below update automatically as you change your answers.</p>}
       </Card>
 
       {/* Results */}
       {results && (
         <div id="results-section" className="space-y-6">
+          <Card dark={darkMode}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <H2 dark={darkMode}>Your results for {country.name}</H2>
+                <p role="status" aria-live="polite" className={subCls}>
+                  {storageStatus.state === 'saved' ? 'All results saved.'
+                    : storageStatus.state === 'pending' ? `${storageStatus.pending} result(s) kept on this device, awaiting upload.`
+                    : storageStatus.state === 'offline' ? `${storageStatus.pending} result(s) saved on this device. Upload will resume when you are online.`
+                    : storageStatus.state === 'error' ? 'Results could not be uploaded. Saved on this device for automatic retry.'
+                    : storageStatus.state === 'temporary' ? 'Local storage is unavailable. Keep this page open until your results are saved.'
+                    : 'Saving detailed results…'}
+                </p>
+                {storageStatus.state === 'error' && (
+                  <button onClick={retryPendingCalculations} className="mt-1 text-sm underline">Retry saving</button>
+                )}
+              </div>
+              <button onClick={exportPdf} disabled={exporting}
+                className="px-5 py-3 rounded-lg bg-emerald-700 text-white font-semibold hover:bg-emerald-800 disabled:opacity-60 disabled:cursor-wait">
+                {exporting ? 'Preparing PDF…' : 'Export results as PDF'}
+              </button>
+            </div>
+            {exportError && <p role="alert" className="mt-2 text-sm text-red-500">{exportError}</p>}
+          </Card>
           {/* Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card dark={darkMode} className="text-center">
@@ -647,7 +683,7 @@ const NFootprintCalculator = () => {
               </button>
             </div>
             <Note dark={darkMode}>
-              Food production losses split into leaching and runoff to water, volatilization to air (ammonia and nitrogen oxides) and nitrous oxide (a greenhouse gas);
+              Food production losses split into leaching and runoff to water, volatilization to air (ammonia) and nitrous oxide (a greenhouse gas);
               energy emissions split into nitrogen oxides, ammonia and nitrous oxide.
             </Note>
             {showPathways && compareChart(pathwayRows, 420)}
