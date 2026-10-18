@@ -1,6 +1,15 @@
 # My-N-Print — Progress Log
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+
+## 2026-10-19 — Firestore logging switched on
+- The Firestore database is the named database `my-n-print-db` (not "(default)"; writes to "(default)" fail with a billing error). `src/firebase.js` now writes to `my-n-print-db` via the Firestore REST API (`documents:commit`, server timestamp) — no Firebase SDK; the CDN `<script>` tags were removed from `public/index.html`. `firebase.json` points the rules at `my-n-print-db`.
+- Tested from the sandbox with the `.env` key: 3 test documents written to `calculations` (delete them in the console).
+- Still to do: publish `firestore.rules` on `my-n-print-db` (console → Rules), add website restrictions to the API key, commit + push.
+
+>>>>>>> Stashed changes
 ## 2026-10-07 (EAT-Lancet + calories)
 - EAT-Lancet servings are now intakes (household waste no longer subtracted) — matches the paper fix.
 - Calorie estimate: oils & fats = national FAOSTAT supply of vegetable oils (8,840 kcal/kg) and animal fats (7,200 kcal/kg), scaled by the user's kcal from the 15 food groups relative to the national default diet (new per-country fields `oils_fats_kcal`, `kcal15` in appData.json). Replaces the flat 130 kcal. 0 when no servings are entered.

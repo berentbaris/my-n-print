@@ -13,7 +13,10 @@
       }
     ]
   },
-  "firestore": {
-    "rules": "firestore.rules"
-  }
+  "firestore": [
+    {
+      "database": "my-n-print-db",
+      "rules": "firestore.rules"
+    }
+  ]
 }
