@@ -1,20 +1,10 @@
 # My-N-Print — Progress Log
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
+## 2026-10-19 — Firestore storage switched on (v5.1.1)
+- The project's Firestore database is the named database `my-n-print-db`; there is no "(default)" database (requests to it fail with a billing error). `src/firebase.js` now calls `getFirestore(app, 'my-n-print-db')`; `firebase.json` deploys the rules to `my-n-print-db`.
+- Commit 2.2 had pushed unresolved stash-merge conflict markers (`src/firebase.js`, `public/index.html`, `progress.md`), so the build/deploy failed. Resolved by keeping the 2.1 full-snapshot storage (IndexedDB outbox, schema-v2 records) and dropping the interim REST version from this chat.
+- Rules published on `my-n-print-db` = `firestore.rules` (schema-v2 validation). Test documents written from the sandbox on 19 Oct (fields `test`/`note`, or appVersion `test-delete-me`) can be deleted in the console.
 
-## 2026-10-19 — Firestore logging switched on
-- The Firestore database is the named database `my-n-print-db` (not "(default)"; writes to "(default)" fail with a billing error). `src/firebase.js` now writes to `my-n-print-db` via the Firestore REST API (`documents:commit`, server timestamp) — no Firebase SDK; the CDN `<script>` tags were removed from `public/index.html`. `firebase.json` points the rules at `my-n-print-db`.
-- Tested from the sandbox with the `.env` key: 3 test documents written to `calculations` (delete them in the console).
-- Still to do: publish `firestore.rules` on `my-n-print-db` (console → Rules), add website restrictions to the API key, commit + push.
-
->>>>>>> Stashed changes
-## 2026-10-07 (EAT-Lancet + calories)
-- EAT-Lancet servings are now intakes (household waste no longer subtracted) — matches the paper fix.
-- Calorie estimate: oils & fats = national FAOSTAT supply of vegetable oils (8,840 kcal/kg) and animal fats (7,200 kcal/kg), scaled by the user's kcal from the 15 food groups relative to the national default diet (new per-country fields `oils_fats_kcal`, `kcal15` in appData.json). Replaces the flat 130 kcal. 0 when no servings are entered.
-- 186 tests pass; build compiles. Push to `main` to deploy.
-=======
 ## 2026-10-08 — v5.1, PDF export and complete result storage
 
 - Changed the food-production volatilization label to `Volatilization, NH₃ (food production)` and the accompanying explanation to ammonia. Screen and PDF share the same pathway labels.
@@ -24,7 +14,11 @@
 - Bundled the Firebase SDK via npm; removed CDN script dependencies. Validated Firestore records remain private; retries may write identical records but cannot change previous results. The hosting workflow now deploys Firestore rules too.
 - Validation: 190 tests pass (including UI under StrictMode, full snapshots, failed-upload retry, and IndexedDB persistence across module reload); production build compiles; PDF pages visually inspected. Browser preview timed out, so UI behavior was verified with React Testing Library.
 - Live verification is outstanding: local Firebase credentials are expired (`firebase login --reauth` required). Ensure the default database is enabled, deploy hosting and rules, and confirm a calculation + live edit produce two schema-v2 records. Existing older records retain only the fields originally recorded.
->>>>>>> Stashed changes
+
+## 2026-10-07 (EAT-Lancet + calories)
+- EAT-Lancet servings are now intakes (household waste no longer subtracted) — matches the paper fix.
+- Calorie estimate: oils & fats = national FAOSTAT supply of vegetable oils (8,840 kcal/kg) and animal fats (7,200 kcal/kg), scaled by the user's kcal from the 15 food groups relative to the national default diet (new per-country fields `oils_fats_kcal`, `kcal15` in appData.json). Replaces the flat 130 kcal. 0 when no servings are entered.
+- 186 tests pass; build compiles. Push to `main` to deploy.
 
 ## 2026-10-03 (session 7 — v5.0, round-2 methodology)
 
