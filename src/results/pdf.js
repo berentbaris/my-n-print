@@ -133,7 +133,7 @@ export function createResultsPdf(snapshot, exportedAt = new Date()) {
   paragraph(`Food groups excluded by the model: ${Array.isArray(ref.excluded) ? ref.excluded.join(', ') : JSON.stringify(ref.excluded)}.`);
   heading('Method and references');
   paragraph('Food: servings/week x serving weight x 52 x nitrogen content, multiplied by country loss factors, adjusted for food waste, wastewater removal and food-chain energy. Energy: household electricity/gas and personal travel multiplied by national emission factors.');
-  paragraph('Sources: FAOSTAT; EDGAR v8.0 (2022); UN energy statistics; van Puijenbroek et al. (2019). My-N-Print: Baris et al., accompanying manuscript.', 8);
+  paragraph('Sources: FAOSTAT; EDGAR v8.1 and 2025 GHG release (2022); UN energy statistics; van Puijenbroek et al. (2019). My-N-Print: Baris et al., accompanying manuscript.', 8);
   paragraph('Willett et al. (2019), Food in the Anthropocene, Lancet 393, 447-492. Leach et al. (2012), A nitrogen footprint model, Environmental Development 1, 40-66. Sutton et al. (2013), Our Nutrient World.', 8);
   paragraph('https://my-nprint.web.app/', 8);
 

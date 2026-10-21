@@ -45,3 +45,20 @@ test('save every calculation and live edit, export the current snapshot, and do 
   await waitFor(() => expect(downloadResultsPdf).toHaveBeenCalledTimes(1));
   expect(downloadResultsPdf.mock.calls[0][0]).toEqual(logCalculation.mock.calls[2][0]);
 });
+
+test('opting out of research storage stops saving and is remembered', () => {
+  logCalculation.mockClear();
+  window.localStorage.removeItem('my-nprint-share-results');
+  Element.prototype.scrollIntoView = jest.fn();
+  const { unmount } = render(<NFootprintCalculator />);
+  expect(screen.getByRole('heading', { name: 'Privacy notice' })).toBeTruthy();
+  fireEvent.click(screen.getByLabelText('Save my anonymous answers and results for research'));
+  fireEvent.change(screen.getByLabelText('Select your country:'), { target: { value: 'DEU' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Calculate N-Print' }));
+  expect(logCalculation).not.toHaveBeenCalled();
+  expect(screen.getByText('Your results are not being saved (you opted out).')).toBeTruthy();
+  unmount();
+  render(<NFootprintCalculator />);
+  expect(screen.getByLabelText('Save my anonymous answers and results for research').checked).toBe(false);
+  window.localStorage.removeItem('my-nprint-share-results');
+});

@@ -1,5 +1,10 @@
 # My-N-Print — Progress Log
 
+
+## 2026-10-20 — Privacy notice (v5.1.1)
+- Added a privacy notice section (what is saved, what is not, where, purpose, choice, contact b.t.baris@cml.leidenuniv.nl) and a "Save my anonymous answers and results for research" checkbox (default on; choice remembered in localStorage `my-nprint-share-results`). When unticked nothing is logged and the status line says so. New test; 192 tests pass; build compiles.
+- Open: default-on is an opt-out. Under the EU ePrivacy rules the browser IDs in localStorage may need opt-in consent; check with Leiden's privacy officer (switch = initial value of `readShareChoice`).
+
 ## 2026-10-19 — Firestore storage switched on (v5.1.1)
 - The project's Firestore database is the named database `my-n-print-db`; there is no "(default)" database (requests to it fail with a billing error). `src/firebase.js` now calls `getFirestore(app, 'my-n-print-db')`; `firebase.json` deploys the rules to `my-n-print-db`.
 - Commit 2.2 had pushed unresolved stash-merge conflict markers (`src/firebase.js`, `public/index.html`, `progress.md`), so the build/deploy failed. Resolved by keeping the 2.1 full-snapshot storage (IndexedDB outbox, schema-v2 records) and dropping the interim REST version from this chat.

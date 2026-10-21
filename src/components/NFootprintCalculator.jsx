@@ -12,7 +12,14 @@ import {
 } from '../calc/calc';
 
 /* ===== CONFIG ===== */
-const VERSION = '5.1.0';
+const VERSION = '5.1.1';
+
+// Privacy: contact for questions or data requests (shown in the privacy notice when set).
+const PRIVACY_CONTACT = 'b.t.baris@cml.leidenuniv.nl';
+const SHARE_KEY = 'my-nprint-share-results';
+function readShareChoice() {
+  try { return window.localStorage.getItem(SHARE_KEY) !== 'no'; } catch { return true; }
+}
 const COUNTRY_LIST = Object.entries(data.countries)
   .map(([iso, c]) => ({ iso, name: c.name }))
   .sort((a, b) => a.name.localeCompare(b.name));
@@ -91,6 +98,11 @@ const NFootprintCalculator = () => {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const lastLogged = useRef(null);
+  const [shareResults, setShareResults] = useState(readShareChoice);
+  const changeShare = (on) => {
+    setShareResults(on);
+    try { window.localStorage.setItem(SHARE_KEY, on ? 'yes' : 'no'); } catch { /* choice kept for this visit */ }
+  };
 
   const country = iso ? data.countries[iso] : null;
 
@@ -182,13 +194,13 @@ const NFootprintCalculator = () => {
   }, []);
 
   useEffect(() => {
-    if (!snapshot) return;
+    if (!snapshot || !shareResults) return;
     const previous = lastLogged.current;
     if (previous?.snapshot === snapshot && previous.request === calculationRequest) return;
     lastLogged.current = { snapshot, request: calculationRequest };
     const event = !previous || previous.request !== calculationRequest ? 'calculate' : 'input-change';
     logCalculation(snapshot, event).catch(() => setStorageStatus({ state: 'error', pending: 1 }));
-  }, [snapshot, calculationRequest]);
+  }, [snapshot, calculationRequest, shareResults]);
 
   useEffect(() => {
     if (results && !hasScrolled) {
@@ -555,9 +567,15 @@ const NFootprintCalculator = () => {
             {calculated ? 'Recalculate N-Print' : 'Calculate N-Print'}
           </button>
         </div>
-        <p className={`mt-3 text-center ${subCls}`}>
-          Your answers and detailed results are saved automatically for analysis, with an anonymous visitor ID.
-        </p>
+        <div className={`mt-3 text-center ${subCls}`}>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={shareResults} onChange={(e) => changeShare(e.target.checked)} />
+            <span>Save my anonymous answers and results for research</span>
+          </label>
+          <div className="text-sm mt-1">
+            No name, e-mail or other personal details are collected. <a href="#privacy" className="underline">Privacy notice</a>
+          </div>
+        </div>
         {calculated && <p className={`mt-2 text-center ${subCls}`}>Results below update automatically as you change your answers.</p>}
       </Card>
 
@@ -569,14 +587,15 @@ const NFootprintCalculator = () => {
               <div>
                 <H2 dark={darkMode}>Your results for {country.name}</H2>
                 <p role="status" aria-live="polite" className={subCls}>
-                  {storageStatus.state === 'saved' ? 'All results saved.'
+                  {!shareResults ? 'Your results are not being saved (you opted out).'
+                    : storageStatus.state === 'saved' ? 'All results saved.'
                     : storageStatus.state === 'pending' ? `${storageStatus.pending} result(s) kept on this device, awaiting upload.`
                     : storageStatus.state === 'offline' ? `${storageStatus.pending} result(s) saved on this device. Upload will resume when you are online.`
                     : storageStatus.state === 'error' ? 'Results could not be uploaded. Saved on this device for automatic retry.'
                     : storageStatus.state === 'temporary' ? 'Local storage is unavailable. Keep this page open until your results are saved.'
                     : 'Saving detailed results…'}
                 </p>
-                {storageStatus.state === 'error' && (
+                {shareResults && storageStatus.state === 'error' && (
                   <button onClick={retryPendingCalculations} className="mt-1 text-sm underline">Retry saving</button>
                 )}
               </div>
@@ -765,7 +784,7 @@ const NFootprintCalculator = () => {
             ['How can I reduce my nitrogen footprint?',
               'The most effective steps are eating less meat and dairy (especially beef, mutton and goat), wasting less food, choosing renewable electricity, driving and flying less, and buying fewer new goods. The results section shows which parts of your footprint are furthest above your country\'s average.'],
             ['How is my footprint calculated?',
-              'Food: the nitrogen in the food you eat is multiplied by country-, food group- and pathway-specific loss factors derived from FAO emission statistics (fertilizer, crop residues, manure, feed and imports), plus sewage nitrogen not removed by treatment and fuel used in the food chain. Energy: your electricity, gas, travel and spending are multiplied by country-specific emission factors from the EDGAR v8.0 inventory (2022). With the default answers the calculator reproduces the national average published in the accompanying paper.'],
+              'Food: the nitrogen in the food you eat is multiplied by country-, food group- and pathway-specific loss factors derived from FAO emission statistics (fertilizer, crop residues, manure, feed and imports), plus sewage nitrogen not removed by treatment and fuel used in the food chain. Energy: your electricity, gas, travel and spending are multiplied by country-specific emission factors from the EDGAR inventory for 2022 (v8.1 air pollutants; 2025 release for N₂O). With the default answers the calculator reproduces the national average published in the accompanying paper.'],
           ].map(([q, a]) => (
             <div key={q}>
               <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>{q}</h3>
@@ -775,8 +794,21 @@ const NFootprintCalculator = () => {
         </div>
       </div>
 
+      {/* Privacy notice */}
+      <div id="privacy" className={`rounded-2xl p-6 md:p-8 mt-8 ${darkMode ? 'bg-gray-800/60 border border-gray-700' : 'bg-white/80 border border-emerald-100'}`}>
+        <h2 className={`text-2xl md:text-3xl font-bold mb-4 ${darkMode ? 'text-emerald-300' : 'text-emerald-800'}`}>Privacy notice</h2>
+        <div className={`space-y-3 leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <p>My-N-Print is a research tool developed at the Institute of Environmental Sciences (CML), Leiden University. Unless you untick the box above the Calculate button, the calculator saves your answers and results so that we can study nitrogen footprints and improve the tool.</p>
+          <p><strong>What we save:</strong> the country you select, your answers (food servings, energy use, travel, spending and options), the calculated footprint and its components, the date and time, the app version, and two random identifiers created by your browser: one for your browser and one for the current visit. These identifiers let us tell repeat calculations apart; they are not linked to your name or device details.</p>
+          <p><strong>What we do not save:</strong> your name, e-mail address, location or IP address, or any other contact or account details. We do not use advertising or tracking cookies.</p>
+          <p><strong>Where it is stored:</strong> in a Google Cloud Firestore database (Firebase, project my-nprint) that only the research team can read. Your browser keeps a copy of a result only until it has been uploaded. Like any web host, Google processes technical data such as IP addresses to deliver the site; these are not added to the saved results.</p>
+          <p><strong>How it is used:</strong> for scientific research only. Results may be published in aggregated form (for example, average footprints per country); individual records are not published.</p>
+          <p><strong>Your choice:</strong> untick “Save my anonymous answers and results for research” and nothing will be saved; your choice is remembered in this browser. Because the saved results cannot be linked to you, we cannot find or delete an individual record afterwards.{PRIVACY_CONTACT && <> Questions: <a className="underline" href={`mailto:${PRIVACY_CONTACT}`}>{PRIVACY_CONTACT}</a>.</>}</p>
+        </div>
+      </div>
+
       <div className={`text-center mt-6 text-sm ${darkMode ? 'text-gray-500' : 'text-emerald-600'}`}>
-        v{VERSION} · Data: FAOSTAT, EDGAR v8.0 (2022), UN energy statistics, van Puijenbroek et al. (2019)
+        v{VERSION} · Data: FAOSTAT, EDGAR v8.1 and 2025 GHG release (2022), UN energy statistics, van Puijenbroek et al. (2019)
       </div>
     </div>
   );
