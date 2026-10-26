@@ -168,9 +168,13 @@ export function dailyCalories(data, servings, iso) {
 }
 
 /** Components where the user is furthest above the national average (kg N/yr), largest first. */
+/** Components where the user is furthest above the national average.
+ *  Plant food groups are never listed: eating more legumes, grains, roots, vegetables or fruit than the
+ *  average usually means they replace animal foods, which lowers the footprint for the same calories and protein. */
 export function biggestGaps(user, avg, n = 3) {
   const items = [];
   user.food.rows.forEach((r, i) => {
+    if (r.group === 'plant') return;
     items.push({ kind: 'food', key: r.key, label: r.label, user: r.total, avg: avg.food.rows[i].total });
   });
   ENERGY_KEYS.forEach((k) => {
@@ -181,4 +185,39 @@ export function biggestGaps(user, avg, n = 3) {
     .filter((x) => x.diff > 0.05)
     .sort((a, b) => b.diff - a.diff)
     .slice(0, n);
+}
+
+export const SWAP_TARGET = 'beans and other legumes';
+
+/** Losses from production and food-chain energy per kg N eaten (wastewater is the same for any food,
+ *  because it depends only on the nitrogen eaten). */
+function supplyLossPerN(data, iso, key, wasteLevel) {
+  const cat = data.categories.find((x) => x.key === key);
+  const f = data.countries[iso].food[key];
+  return (f.vnf[3] ?? 0) * wasteFactor(cat.waste, wasteLevel, data) + (f.fe ?? 0);
+}
+
+/** Swap one weekly serving of an animal food for legumes with the same nitrogen, i.e. the same protein.
+ *  Returns the legume amount (g, dry), calories of both, and the yearly saving (kg N). */
+export function proteinSwap(data, iso, key, wasteLevel = 'average') {
+  const cat = data.categories.find((x) => x.key === key);
+  const leg = data.categories.find((x) => x.key === SWAP_TARGET);
+  if (!cat || !leg || cat.group === 'plant') return null;
+  const nServing = cat.serving_kg * cat.n_content;               // kg N per serving
+  const legKg = nServing / leg.n_content;
+  const saving = 52 * nServing * (supplyLossPerN(data, iso, key, wasteLevel) - supplyLossPerN(data, iso, SWAP_TARGET, wasteLevel));
+  if (!(saving > 0)) return null;
+  return {
+    legumeGrams: legKg * 1000,
+    kcalFrom: cat.kcal,
+    kcalTo: (legKg / leg.serving_kg) * leg.kcal,
+    savingKgYr: saving,
+  };
+}
+
+/** Plant food groups the user eats clearly more of than the national average (shown as positive feedback). */
+export function plantStrengths(user, avg, ratio = 1.1) {
+  return user.food.rows
+    .map((r, i) => ({ key: r.key, label: r.label, group: r.group, user: r.consN, avg: avg.food.rows[i].consN }))
+    .filter((r) => r.group === 'plant' && r.user > 0 && r.user > r.avg * ratio);
 }

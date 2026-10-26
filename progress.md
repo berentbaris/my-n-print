@@ -1,5 +1,12 @@
 # My-N-Print — Progress Log
 
+## 2026-10-26 — Advice keeps calories and protein (v5.2.0)
+- Issue raised: comparing with the national average made the app "advise" eating fewer legumes. Fixed in `src/calc/calc.js`: `biggestGaps` no longer lists plant food groups (legumes, grains, rice, roots, vegetables, fruit); only animal foods and energy can appear.
+- New `proteinSwap()`: for each animal-food gap, the app shows swapping one weekly serving for dried legumes with the same nitrogen (= same protein), the calories of both, and the yearly saving (production + food-chain energy; wastewater is unchanged because the same N is eaten). E.g. Netherlands beef: about 125 g dry beans, about 430 instead of 400 kcal, saves about 2.5 kg N a year.
+- New `plantStrengths()`: plant groups eaten more than 10% above the national average get a "Keep it up" note saying there is no need to cut them. Stored in `results.strengths` (no Firestore rule change needed).
+- Animal-food tips, the general options and the PDF now say "swap rather than cut: keep your calories and protein". The previous "eat roughly the amount of food you need" line was dropped; "waste less food" kept.
+- Tests: 4 new (plant foods never advised against for all 181 countries; plant-heavy diet gets positive feedback; swap keeps N eaten and saves N for beef everywhere; UI test). 196 pass; production build compiles.
+- To do: commit and push (version 5.2.0).
 
 ## 2026-10-20 — Privacy notice (v5.1.1)
 - Added a privacy notice section (what is saved, what is not, where, purpose, choice, contact b.t.baris@cml.leidenuniv.nl) and a "Save my anonymous answers and results for research" checkbox (default on; choice remembered in localStorage `my-nprint-share-results`). When unticked nothing is logged and the status line says so. New test; 192 tests pass; build compiles.

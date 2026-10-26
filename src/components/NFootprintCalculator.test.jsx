@@ -62,3 +62,24 @@ test('opting out of research storage stops saving and is remembered', () => {
   expect(screen.getByLabelText('Save my anonymous answers and results for research').checked).toBe(false);
   window.localStorage.removeItem('my-nprint-share-results');
 });
+
+test('advice suggests protein swaps for animal foods and never cutting plant foods', () => {
+  logCalculation.mockClear();
+  logCalculation.mockResolvedValue('record');
+  window.localStorage.removeItem('my-nprint-share-results');
+  Element.prototype.scrollIntoView = jest.fn();
+  render(<NFootprintCalculator />);
+  fireEvent.change(screen.getByLabelText('Select your country:'), { target: { value: 'DEU' } });
+  fireEvent.change(document.getElementById('food-beans and other legumes'), { target: { value: '20' } });
+  fireEvent.change(document.getElementById('food-vegetables'), { target: { value: '30' } });
+  fireEvent.change(document.getElementById('food-beef'), { target: { value: '7' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Calculate N-Print' }));
+  expect(screen.getByText('🌱 Keep it up')).toBeTruthy();
+  expect(screen.getByText(/You eat more beans & legumes and vegetables than the average/)).toBeTruthy();
+  expect(screen.getByText(/Swapping one serving a week for about \d+ g of dried beans/)).toBeTruthy();
+  expect(screen.queryByText(/^🫘 Beans & legumes:/)).toBeNull();
+  const recs = logCalculation.mock.calls[logCalculation.mock.calls.length - 1][0].recommendations;
+  expect(recs.map((r) => r.key)).toContain('beef');
+  expect(recs.map((r) => r.key)).not.toContain('beans and other legumes');
+  expect(recs.map((r) => r.key)).not.toContain('vegetables');
+});

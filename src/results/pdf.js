@@ -95,8 +95,10 @@ export function createResultsPdf(snapshot, exportedAt = new Date()) {
   ]);
   heading('What you can do');
   if (!snapshot.recommendations.length) paragraph('None of your components is clearly above the national average.');
-  snapshot.recommendations.forEach((item) => paragraph(`${item.label}: ${number(item.user)} vs ${number(item.avg)} kg N/yr (+${number(item.diff)}). ${item.tip}`, 8));
-  paragraph('General options: reduce animal protein and food waste; choose more legumes, grains and vegetables; use renewable electricity; walk, cycle or use public transit; fly less and buy fewer new goods.', 8);
+  snapshot.recommendations.forEach((item) => paragraph(`${item.label}: ${number(item.user)} vs ${number(item.avg)} kg N/yr (+${number(item.diff)}). ${item.tip}${item.swapText ? ' ' + item.swapText : ''}`, 8));
+  const strengths = (results.strengths || []).map((x) => x.label.toLowerCase());
+  if (strengths.length) paragraph(`Keep it up: you eat more ${strengths.join(', ')} than the national average. These foods give protein and energy with low nitrogen losses; there is no need to cut them.`, 8);
+  paragraph('General options: swap rather than cut, keeping your calories and protein but getting more of them from legumes, grains, nuts and vegetables and less from animal foods; waste less food; use renewable electricity; walk, cycle or use public transit; fly less and buy fewer new goods.', 8);
 
   page('Your diet and comparisons');
   paragraph('Servings are food actually eaten per week. Grain, rice and bean serving weights are dry/uncooked. National average and EAT-Lancet use the same country reference data. EAT-Lancet refers to the food footprint only.');

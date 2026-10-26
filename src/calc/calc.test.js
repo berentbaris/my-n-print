@@ -2,7 +2,7 @@
 // the national footprints published in the paper (Supplementary Table 1 / Supplementary Data 1).
 // Run: npm test -- --watchAll=false
 import data from '../data/appData.json';
-import { nationalAverage, dailyCalories, calorieBreakdown, computeFood, eatLancet, defaultInputs } from './calc';
+import { nationalAverage, dailyCalories, calorieBreakdown, computeFood, eatLancet, defaultInputs, computeAll, biggestGaps, proteinSwap, plantStrengths } from './calc';
 
 const TOL = 0.01; // kg N per capita per year
 
@@ -62,4 +62,37 @@ test('EAT-Lancet diet gives a finite food footprint for every country', () => {
   Object.keys(data.countries).forEach((iso) => {
     expect(Number.isFinite(eatLancet(data, iso).total)).toBe(true);
   });
+});
+
+test('advice never suggests eating fewer plant foods', () => {
+  Object.keys(data.countries).forEach((iso) => {
+    const d = defaultInputs(data, iso);
+    const s = { ...d.servings };
+    data.categories.filter((c) => c.group === 'plant').forEach((c) => { s[c.key] = (s[c.key] || 0) * 3 + 5; });
+    const gaps = biggestGaps(computeAll(data, { ...d, servings: s }), nationalAverage(data, iso), 20);
+    gaps.filter((g) => g.kind === 'food').forEach((g) => {
+      expect(data.categories.find((c) => c.key === g.key).group).not.toBe('plant');
+    });
+  });
+});
+
+test('a mostly plant-based diet gets positive feedback and no food cuts', () => {
+  const d = defaultInputs(data, 'DEU');
+  const s = { ...d.servings, beef: 0, pork: 0, 'mutton and goat meat': 0, offals: 0, 'beans and other legumes': d.servings['beans and other legumes'] + 7 };
+  const user = computeAll(data, { ...d, servings: s });
+  const avg = nationalAverage(data, 'DEU');
+  expect(biggestGaps(user, avg).filter((g) => g.kind === 'food')).toHaveLength(0);
+  expect(plantStrengths(user, avg).map((x) => x.key)).toContain('beans and other legumes');
+});
+
+test('protein swap keeps nitrogen eaten and saves nitrogen for red meat everywhere', () => {
+  const beef = data.categories.find((c) => c.key === 'beef');
+  const leg = data.categories.find((c) => c.key === 'beans and other legumes');
+  Object.keys(data.countries).forEach((iso) => {
+    const sw = proteinSwap(data, iso, 'beef');
+    expect(sw).not.toBeNull();
+    expect(sw.savingKgYr).toBeGreaterThan(0);
+    expect(Math.abs(sw.legumeGrams / 1000 * leg.n_content - beef.serving_kg * beef.n_content)).toBeLessThan(1e-9);
+  });
+  expect(proteinSwap(data, 'DEU', 'vegetables')).toBeNull();
 });

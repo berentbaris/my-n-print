@@ -7,12 +7,12 @@ import { logCalculation, retryPendingCalculations, startCalculationStorage, subs
 import { createSnapshot, pathwayComparisons } from '../results/snapshot';
 import data from '../data/appData.json';
 import {
-  defaultInputs, computeAll, nationalAverage, eatLancet, calorieBreakdown, biggestGaps,
+  defaultInputs, computeAll, nationalAverage, eatLancet, calorieBreakdown, biggestGaps, proteinSwap, plantStrengths,
   ENERGY_KEYS, ENERGY_LABELS, wasteFactor,
 } from '../calc/calc';
 
 /* ===== CONFIG ===== */
-const VERSION = '5.1.1';
+const VERSION = '5.2.0';
 
 // Privacy: contact for questions or data requests (shown in the privacy notice when set).
 const PRIVACY_CONTACT = 'b.t.baris@cml.leidenuniv.nl';
@@ -49,16 +49,16 @@ const parse = (s) => {
 const field = (v) => ({ raw: fmtInput(v), val: v });
 
 const TIPS = {
-  beef: 'Beef has among the highest nitrogen losses per serving. Replacing some servings with poultry, legumes or grains lowers your footprint the most.',
-  'mutton and goat meat': 'Mutton and goat meat have very high losses per serving. Swapping some servings for legumes, poultry or fish helps.',
-  pork: 'Try replacing some pork with plant proteins such as beans, lentils or tofu.',
-  poultry: 'Poultry is lower than red meat, but plant proteins are lower still.',
-  offals: 'Offal comes from the same animals as red meat and carries similar losses per kg of nitrogen.',
-  'fish and seafood': 'Choose a moderate amount of fish; plant proteins have lower losses.',
-  milk: 'Dairy contributes through feed and manure. Moderate amounts, or plant-based alternatives, reduce losses.',
-  cheese: 'Cheese is concentrated milk — it takes about 10 kg of milk to make 1 kg of cheese.',
+  beef: 'Beef has among the highest nitrogen losses per serving. Get the same protein from legumes, or from poultry or grains, instead of some servings.',
+  'mutton and goat meat': 'Mutton and goat meat have very high losses per serving. Getting the same protein from legumes, or from poultry or fish, helps most.',
+  pork: 'Get the same protein from beans, lentils or tofu instead of some servings of pork.',
+  poultry: 'Poultry is lower than red meat, but plant proteins such as beans and lentils are lower still.',
+  offals: 'Offal comes from the same animals as red meat and carries similar losses per kg of nitrogen. Plant proteins are much lower.',
+  'fish and seafood': 'Fish is lower than red meat; plant proteins such as beans and lentils are lower still.',
+  milk: 'Dairy contributes through feed and manure. Plant-based drinks, or protein from legumes, reduce losses.',
+  cheese: 'Cheese is concentrated milk: it takes about 10 kg of milk to make 1 kg of cheese. Legumes, nuts or tofu give protein with lower losses.',
   eggs: 'Eggs are moderate; legumes are a lower-nitrogen protein source.',
-  default_food: 'Eating closer to the recommended amount of this food group lowers your footprint.',
+  default_food: 'Getting more of your protein from plant foods lowers your footprint.',
   electricity: 'Switch to a renewable electricity tariff or install solar panels, and use efficient appliances.',
   household_gas: 'Better insulation, a lower thermostat setting, or a heat pump reduce gas use.',
   household_other: 'Cleaner cooking and heating fuels (e.g. electricity or LPG instead of wood, charcoal or kerosene) reduce emissions.',
@@ -67,6 +67,20 @@ const TIPS = {
   flight: 'Fewer or shorter flights, or taking the train, reduce aviation NOₓ.',
   goods_services: 'Buying fewer new goods (repairing, sharing, second-hand) lowers the embodied emissions of consumption.',
 };
+
+function listText(items) {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/** One weekly serving swapped for legumes with the same protein (same nitrogen eaten). */
+export function swapText(gap) {
+  const sw = gap && gap.swap;
+  if (!sw) return '';
+  const g = Math.round(sw.legumeGrams / 5) * 5;
+  const kcal = (v) => Math.round(v / 10) * 10;
+  return `Swapping one serving a week for about ${g} g of dried beans, lentils or chickpeas (weighed dry; the same protein, about ${kcal(sw.kcalTo)} instead of ${kcal(sw.kcalFrom)} kcal) saves about ${sw.savingKgYr.toFixed(1)} kg N a year.`;
+}
 
 /* ===== SMALL UI PIECES ===== */
 function Card({ dark, className = '', children }) {
@@ -178,13 +192,14 @@ const NFootprintCalculator = () => {
     const user = computeAll(data, inputs);
     const avg = nationalAverage(data, iso);
     const eat = eatLancet(data, iso);
-    return { user, avg, eat, gaps: biggestGaps(user, avg, 3) };
+    const gaps = biggestGaps(user, avg, 3).map((g) => (g.kind === 'food' ? { ...g, swap: proteinSwap(data, iso, g.key, inputs.waste) } : g));
+    return { user, avg, eat, gaps, strengths: plantStrengths(user, avg) };
   }, [calculated, inputs, iso]);
 
   const snapshot = useMemo(() => results ? createSnapshot({
     data, inputs, results, usedDefaults: !touched, appVersion: VERSION,
     rawInputs: { food, energy: en, options: opts },
-    recommendations: results.gaps.map((gap) => ({ ...gap, tip: TIPS[gap.key] || TIPS.default_food })),
+    recommendations: results.gaps.map((gap) => ({ ...gap, tip: TIPS[gap.key] || TIPS.default_food, swapText: swapText(gap) })),
   }) : null, [results, inputs, touched, food, en, opts]);
 
   useEffect(() => {
@@ -648,6 +663,7 @@ const NFootprintCalculator = () => {
                         {g.kind === 'food' ? data.categories.find((c) => c.key === g.key).icon : ENERGY_ICONS[g.key]} {g.label}: {kg(g.user)} vs {kg(g.avg)} kg N/yr (+{kg(g.diff)})
                       </div>
                       <div className={`text-sm mt-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{TIPS[g.key] || TIPS.default_food}</div>
+                      {g.swap && <div className={`text-sm mt-1 ${darkMode ? 'text-emerald-200' : 'text-emerald-800'}`}>{swapText(g)}</div>}
                     </li>
                   ))}
                 </ul>
@@ -655,9 +671,18 @@ const NFootprintCalculator = () => {
             ) : (
               <p className={`mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>None of your components is clearly above the national average.</p>
             )}
+            {results.strengths.length > 0 && (
+              <div className={`${tileCls} mb-4`}>
+                <div className={`font-semibold ${labelCls}`}>🌱 Keep it up</div>
+                <div className={`text-sm mt-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  You eat more {listText(results.strengths.map((x) => x.label.toLowerCase()))} than the average in {country.name}. These foods give protein and energy with low nitrogen losses. Eating them instead of animal foods is one of the best ways to lower your footprint, so there is no need to cut them.
+                </div>
+              </div>
+            )}
             <h3 className={`font-semibold mb-1 ${darkMode ? 'text-emerald-200' : 'text-emerald-700'}`}>General options for reducing nitrogen losses<sup>2,3</sup></h3>
             <ul className={`list-disc pl-6 text-sm space-y-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              <li>The biggest levers are diet and food waste: eat less animal protein, especially beef, mutton and goat, and more legumes, grains and vegetables; eat roughly the amount of food you need, and waste less of it.</li>
+              <li>The biggest lever is where your protein comes from. Swap rather than cut: keep your calories and protein, but get more of them from legumes, grains, nuts and vegetables and less from animal foods, especially beef, mutton and goat.</li>
+              <li>Waste less food: everything wasted had to be produced too.</li>
               <li>Where food comes from matters more than how far it travelled: transport and processing fuel are a small part of the food footprint, while fertilizer, manure and feed are most of it.</li>
               <li>Organic and conventional products have broadly similar nitrogen losses per kg of food; eating less of the high-loss foods matters more than the label.</li>
               <li>For energy, renewable electricity and electric cars reduce emissions the most; walking, cycling and public transit help too.</li>
